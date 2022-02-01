@@ -1,0 +1,3 @@
+.tox
+__pycache__
+python_sotools.egg-info
