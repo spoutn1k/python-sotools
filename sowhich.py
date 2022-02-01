@@ -9,4 +9,7 @@ if __name__ == '__main__':
         print("Usage: %s <libmpi.so.x>" % sys.argv[0], file=sys.stderr)
         sys.exit(1)
 
-    print(resolve(sys.argv[1]))
+    if path := resolve(sys.argv[1]):
+        print(path)
+        sys.exit(0)
+    sys.exit(1)
