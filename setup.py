@@ -18,7 +18,7 @@ except FileNotFoundError:
 
 MODULES = {"sotools": "sotools"}
 
-SCRIPTS = ["sowhich.py"]
+SCRIPTS = ["sowhich.py", "ldd.py"]
 
 CLASSIFIERS = [
     'Intended Audience :: Developers',
