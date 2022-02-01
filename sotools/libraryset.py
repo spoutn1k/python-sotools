@@ -345,11 +345,7 @@ class LibrarySet(set):
 
         def line(soname: str):
             if lib := self.find(soname):
-                format_fields = lib.__dict__
-                format_fields.update(
-                    {'origin': lib.__class__.__name__.lower()})
-
-                return "%(soname)s => %(binary_path)s (%(origin)s)" % format_fields
+                return "\t%(soname)s => %(binary_path)s" % lib.__dict__
             return f"{soname} => not found"
 
         return list(map(line, set.union(self.sonames, self.missing_libraries)))

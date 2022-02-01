@@ -7,9 +7,7 @@ from os.path import realpath
 from pathlib import Path
 from logging import debug
 
-# Symbols imported for ease of use
-from sotools.linker import resolve, host_libraries
-from sotools.libraryset import LibrarySet, Library
+from sotools.libraryset import Library
 
 from elftools.elf.elffile import ELFFile
 
@@ -22,7 +20,7 @@ def is_elf(path):
     try:
         with open(path, 'rb') as target:
             ELFFile(target)
-    except:
+    except Exception:
         return False
 
     return True

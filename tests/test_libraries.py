@@ -2,7 +2,10 @@ import os
 import pathlib
 import unittest
 from shutil import which
-from sotools import host_libraries, resolve, LibrarySet, Library, is_elf, library_links
+from sotools import is_elf, library_links
+from sotools.ldd import ldd
+from sotools.libraryset import LibrarySet, Library
+from sotools.linker import resolve, host_libraries
 
 
 class LibraryTest(unittest.TestCase):
@@ -14,22 +17,7 @@ class LibraryTest(unittest.TestCase):
         ls_bin = which('ls')
         libraries = ldd(ls_bin)
 
-        self.assertTrue({'libc.so.6', 'linker'} < set(libraries.keys()))
-
-    @unittest.skipIf(not which('ls'), "No binary to test with")
-    def test_resolving(self):
-        """
-        Check ldd output equals resolve output
-        """
-        ls_bin = which('ls')
-        libraries = ldd(ls_bin)
-
-        dependencies = set(libraries.keys())
-        dependencies.difference_update({'linker'})
-
-        for soname in dependencies:
-            self.assertEqual(os.path.realpath(libraries[soname]['path']),
-                             resolve(soname))
+        self.assertIn('libc.so.6', libraries.sonames)
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_links(self):
