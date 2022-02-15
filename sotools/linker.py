@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from shutil import which
-from subprocess import run
+from subprocess import run, PIPE
 
 
 class LinkingError(Exception):
@@ -44,7 +44,8 @@ def host_libraries(regen_cache=False):
             cache_args = []
 
     cache = run([ldconfig_path, *cache_args, '-p'],
-                capture_output=True,
+                stdout=PIPE,
+                stderr=PIPE,
                 encoding='utf-8')
 
     if cache.returncode:
