@@ -72,7 +72,7 @@ def host_libraries(regen_cache=False):
     return _cache
 
 
-@lru_cache
+@lru_cache()
 def _linker_path():
     """
     Return linker search paths, in order
