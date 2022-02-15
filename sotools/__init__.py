@@ -63,7 +63,8 @@ def library_links(shared_object: Library):
     _glob_links(prefix)
 
     # glib files are named as libc-2.33.so, but the links are named libc.so.x
-    if matches := match(r'(?P<prefix>lib[a-z_]+)-.+', prefix):
+    matches = match(r'(?P<prefix>lib[a-z_]+)-.+', prefix)
+    if matches:
         _glob_links(matches.group('prefix'))
 
     # If we encounter a special case of symlink presenting as another library,
