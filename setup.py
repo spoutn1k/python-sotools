@@ -32,7 +32,7 @@ CLASSIFIERS = [
 
 install_options = {
     "name": 'python-sotools',
-    "version": '0.0.1',
+    "version": '0.0.2',
     "author": "Jean-Baptiste Skutnik",
     "description": "python implementation of ld.so rules",
     "long_description": "python implementation of ld.so rules",

@@ -75,7 +75,8 @@ class LibraryTest(unittest.TestCase):
         self.assertFalse(is_elf('/'))
         self.assertTrue(is_elf(resolve('libm.so.6')))
 
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    # TODO Figure out a library to test this with
+    @unittest.skipIf(True and not resolve('libm.so.6'), "No library to test with")
     def test_library_links(self):
         with open(resolve('libm.so.6'), 'rb') as file:
             sample = Library(file=file)
