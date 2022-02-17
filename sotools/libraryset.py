@@ -344,7 +344,8 @@ class LibrarySet(set):
         """
 
         def line(soname: str):
-            if lib := self.find(soname):
+            lib = self.find(soname)
+            if lib:
                 return "\t%(soname)s => %(binary_path)s" % lib.__dict__
             return f"{soname} => not found"
 
