@@ -1,1 +1,2 @@
+coverage>=6.3.2
 pyelftools==0.27
