@@ -1,3 +1,4 @@
+from pathlib import Path
 import unittest
 from sotools.libraryset import LibrarySet, Library
 from sotools.linker import resolve
@@ -51,8 +52,14 @@ class LibrarySetTest(unittest.TestCase):
         self.assertTrue(libset.complete)
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_create_from_path(self):
+    def test_create_from_str_path(self):
         libset = LibrarySet.create_from([resolve('libm.so.6')])
+
+        self.assertTrue(libset.complete)
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_create_from_pathlib_path(self):
+        libset = LibrarySet.create_from([Path(resolve('libm.so.6'))])
 
         self.assertTrue(libset.complete)
 
@@ -60,3 +67,33 @@ class LibrarySetTest(unittest.TestCase):
         libset = LibrarySet.create_from(['libm.so.6'])
 
         self.assertFalse(libset.find('libc++'))
+
+    def test_create_from_bad_input(self):
+        with self.assertRaises(Exception):
+            LibrarySet.create_from(range(10))
+
+        with self.assertRaises(Exception):
+            LibrarySet.create_from([None])
+
+        with self.assertRaises(Exception):
+            LibrarySet.create_from(['libnotalib.so'])
+
+    def test_add_junk(self):
+        with self.assertRaises(Exception):
+            LibrarySet().add(1)
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_set(self):
+        libset = LibrarySet()
+
+        lib1 = Library(soname="libnotalib.so")
+        lib2 = Library(soname="libnotalib.so")
+        lib2.binary_path = "/tmp/notalib.so"
+
+        libset.add(lib1)
+        libset.add(lib2)
+
+        self.assertEqual(len(libset), 1)
+        saved_lib = libset.pop()
+        self.assertEqual(saved_lib.binary_path, "/tmp/notalib.so")
+

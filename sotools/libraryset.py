@@ -51,7 +51,6 @@ class Library:
 
             self.binary_path = getattr(file, 'name', file)
 
-
     def __parse_dynamic(self, section):
 
         def __fetch_tags(id_):

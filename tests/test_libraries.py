@@ -28,7 +28,7 @@ class LibraryTest(unittest.TestCase):
         self.assertNotEqual(other, different)
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_library_eq_library(self):
+    def test_library_eq_any(self):
         with open(resolve('libm.so.6'), 'rb') as file:
             sample = Library(file=file)
 
