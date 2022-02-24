@@ -1,104 +1,36 @@
-import os
-import pathlib
 import unittest
-from shutil import which
-from sotools import is_elf, library_links
-from sotools.ldd import ldd
-from sotools.libraryset import LibrarySet, Library
-from sotools.linker import resolve, host_libraries
-
+from sotools.linker import resolve
+from sotools.libraryset import Library
 
 class LibraryTest(unittest.TestCase):
-    def test_host_libraries(self):
-        self.assertNotEqual(host_libraries(), {})
+    def test_library_bad_object(self):
+        lib = Library(file="/tmp/lib.so")
 
-    @unittest.skipIf(not which('ls'), "No binary to test with")
-    def test_ldd(self):
-        ls_bin = which('ls')
-        libraries = ldd(ls_bin)
+        self.assertFalse(lib.soname)
 
-        self.assertIn('libc.so.6', libraries.sonames)
+    def test_library_bad_params(self):
+        lib = Library(file=None, soname="")
 
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_links(self):
+        self.assertFalse(lib.soname)
+
+    @unittest.skipIf(not resolve('libm.so.6') or not resolve('libc.so.6'), "No library to test with")
+    def test_library_eq_library(self):
         with open(resolve('libm.so.6'), 'rb') as file:
-            target = Library(file=file)
+            sample = Library(file=file)
+            other = Library(file=file)
 
-        links = library_links(target)
-        for path in links:
-            self.assertEqual(os.path.realpath(path),
-                             os.path.realpath(target.binary_path))
+        with open(resolve('libc.so.6'), 'rb') as file:
+            different = Library(file=file)
 
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_set(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
-
-        self.assertEqual(len(libset), 1)
-        self.assertSetEqual(libset.sonames, {'libm.so.6'})
+        self.assertEqual(sample, other)
+        self.assertEqual(other, sample)
+        self.assertNotEqual(sample, different)
+        self.assertNotEqual(other, different)
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_set_resolve(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
-
-        libset = libset.resolve()
-
-        self.assertGreater(len(libset), 1)
-        self.assertTrue(libset.sonames > {'libm.so.6', 'libc.so.6'})
-
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_set_missing(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
-
-        self.assertIn('libc.so.6', libset.missing_libraries)
-
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_set_top(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
-
-        self.assertIn('libm.so.6', libset.top_level.sonames)
-
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_is_elf(self):
-        self.assertFalse(is_elf('/proc/meminfo'))
-        self.assertFalse(is_elf('/'))
-        self.assertTrue(is_elf(resolve('libm.so.6')))
-
-    # TODO Figure out a library to test this with
-    @unittest.skipIf(True and not resolve('libm.so.6'), "No library to test with")
-    def test_library_links(self):
+    def test_library_eq_library(self):
         with open(resolve('libm.so.6'), 'rb') as file:
             sample = Library(file=file)
 
-        links = library_links(sample)
-
-        self.assertGreater(len(links), 1)
-        for path in links:
-            self.assertEqual(os.path.realpath(path), sample.binary_path)
-
-    def test_create_from_soname(self):
-        libset = LibrarySet.create_from(['libm.so.6'])
-
-        self.assertTrue(libset.complete)
-
-    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
-    def test_create_from_path(self):
-        libset = LibrarySet.create_from([resolve('libm.so.6')])
-
-        self.assertTrue(libset.complete)
-
-    def test_escape_soname(self):
-        libset = LibrarySet.create_from(['libm.so.6'])
-
-        self.assertFalse(libset.find('libc++'))
+        self.assertNotEqual(sample, 'libm.so.6')
+        self.assertNotEqual('libm.so.6', sample)

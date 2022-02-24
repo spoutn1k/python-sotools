@@ -25,6 +25,7 @@ class Library:
     Relevant ELF header fields used in the dynamic linking of libraries
     """
 
+    # TODO Change the file parameter to accept a path-like object
     def __init__(self, file=None, soname=""):
         self.soname = soname
         self.dyn_dependencies = set()
@@ -44,11 +45,12 @@ class Library:
                         self.__parse_ver_need(section)
                     elif isinstance(section, DynamicSection):
                         self.__parse_dynamic(section)
-            except ELFError as err:
-                logging.error("Error parsing '%s' for ELF data: %s", file.name,
-                              err)
+            except (ELFError, AttributeError) as err:
+                logging.error("Error parsing '%s' for ELF data: %s",
+                              getattr(file, 'name', file), err)
 
-            self.binary_path = file.name
+            self.binary_path = getattr(file, 'name', file)
+
 
     def __parse_dynamic(self, section):
 
