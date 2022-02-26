@@ -46,6 +46,7 @@ class LibrarySetTest(unittest.TestCase):
 
         self.assertIn('libm.so.6', libset.top_level.sonames)
 
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_create_from_soname(self):
         libset = LibrarySet.create_from(['libm.so.6'])
 
@@ -63,6 +64,49 @@ class LibrarySetTest(unittest.TestCase):
 
         self.assertTrue(libset.complete)
 
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_get_glib(self):
+        libset = LibrarySet.create_from(['libm.so.6'])
+
+        self.assertTrue(libset.glib)
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_get_linkers(self):
+        libset = LibrarySet.create_from(['libm.so.6'])
+
+        self.assertTrue(libset.linkers)
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_get_outdated(self):
+        libset = LibrarySet.create_from(['libm.so.6'])
+
+        self.assertFalse(libset.outdated_libraries)
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_ldd(self):
+        libset = LibrarySet.create_from(['libm.so.6'])
+
+        output = libset.ldd_format()
+
+        for line in output:
+            self.assertRegex(line, ".*.so.* => /.*")
+
+    def test_ldd(self):
+        libset = LibrarySet()
+        libset.add(Library(soname='libdummy.so.256'))
+
+        output = libset.ldd_format()
+
+        for line in output:
+            self.assertRegex(line, ".*.so.* => not found")
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
+    def test_escape_soname(self):
+        libset = LibrarySet.create_from(['libm.so.6'])
+
+        self.assertFalse(libset.find('libc++'))
+
+    @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_escape_soname(self):
         libset = LibrarySet.create_from(['libm.so.6'])
 
