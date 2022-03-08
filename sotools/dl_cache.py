@@ -169,7 +169,7 @@ def _cache_libraries(data: bytes):
         raise Exception("Failed retrieving data from cache") from err
 
 
-@lru_cache
+@lru_cache()
 def host_libraries():
     with open('/etc/ld.so.cache', 'rb') as cache_file:
         cache = cache_file.read()
