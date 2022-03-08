@@ -9,9 +9,6 @@ from sotools.linker import resolve, host_libraries
 
 class ToolsTest(unittest.TestCase):
 
-    def test_host_libraries(self):
-        self.assertNotEqual(host_libraries(), {})
-
     @unittest.skipIf(not which('ls'), "No binary to test with")
     def test_ldd(self):
         ls_bin = which('ls')
