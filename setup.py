@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os
+from pathlib import Path
+import importlib.util
 
 try:
     # setuptools supports bdist_wheel
@@ -8,13 +9,15 @@ try:
 except ImportError:
     from distutils.core import setup
 
+# Load metadata from the package's version module
+spec = importlib.util.spec_from_file_location('version',
+                                              Path('sotools', 'version.py'))
+metadata = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(metadata)
+
 DEPENDENCIES = ['pyelftools']
 
-try:
-    with open('requirements.txt') as fp:
-        DEPENDENCIES = fp.read().split()
-except FileNotFoundError:
-    pass
+VERSION = metadata.__version__
 
 MODULES = {"sotools": "sotools"}
 
@@ -32,7 +35,7 @@ CLASSIFIERS = [
 
 install_options = {
     "name": 'python-sotools',
-    "version": '0.0.2',
+    "version": VERSION,
     "author": "Jean-Baptiste Skutnik",
     "description": "python implementation of ld.so rules",
     "long_description": "python implementation of ld.so rules",
