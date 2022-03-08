@@ -109,14 +109,11 @@ class LibrarySet(set):
     """
 
     @classmethod
-    def create_from(cls, library_list, member=Library):
+    def create_from(cls, library_list):
         """
-        -> LibrarySet[type(member)]
+        -> LibrarySet[Library]
         Given a list of str or pathlib.Path, create a cf.libraries.LibrarySet
         with all the libraries and their dependencies resolved.
-
-        Given a class as the member argument, all objects will be created from
-        that class.
         """
 
         def _process(element):
@@ -144,9 +141,9 @@ class LibrarySet(set):
 
         for path in map(_process, library_list):
             with open(path, 'rb') as file:
-                cache.add(member(file))
+                cache.add(Library(file))
 
-        return cache.resolve(member=member)
+        return cache.resolve()
 
     def add(self, elem):
         """
@@ -306,7 +303,7 @@ class LibrarySet(set):
 
         return matches.pop() if matches else None
 
-    def resolve(self, rpath=None, runpath=None, member=Library):
+    def resolve(self, rpath=None, runpath=None):
         """
         -> LibrarySet, superset of self
         will try to resolve all dynamic depedencies of the set's members, then
@@ -332,7 +329,7 @@ class LibrarySet(set):
                     continue
 
                 with open(path, 'rb') as file:
-                    superset.add(member(file))
+                    superset.add(Library(file))
 
             change = superset.missing_libraries != missing
             missing = superset.missing_libraries
