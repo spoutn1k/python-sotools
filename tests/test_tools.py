@@ -18,8 +18,7 @@ class ToolsTest(unittest.TestCase):
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_library_links(self):
-        with open(resolve('libm.so.6'), 'rb') as file:
-            target = Library(file=file)
+        target = Library.from_path(resolve('libm.so.6'))
 
         links = library_links(target)
 

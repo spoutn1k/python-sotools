@@ -8,20 +8,14 @@ class LibrarySetTest(unittest.TestCase):
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_set(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
+        libset = LibrarySet([Library.from_path(resolve('libm.so.6'))])
 
         self.assertEqual(len(libset), 1)
         self.assertSetEqual(libset.sonames, {'libm.so.6'})
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_set_resolve(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
+        libset = LibrarySet([Library.from_path(resolve('libm.so.6'))])
 
         libset = libset.resolve()
 
@@ -30,19 +24,13 @@ class LibrarySetTest(unittest.TestCase):
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_set_missing(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
+        libset = LibrarySet([Library.from_path(resolve('libm.so.6'))])
 
         self.assertIn('libc.so.6', libset.missing_libraries)
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_set_top(self):
-        libset = LibrarySet()
-
-        with open(resolve('libm.so.6'), 'rb') as file:
-            libset.add(Library(file=file))
+        libset = LibrarySet([Library.from_path(resolve('libm.so.6'))])
 
         self.assertIn('libm.so.6', libset.top_level.sonames)
 
@@ -92,8 +80,9 @@ class LibrarySetTest(unittest.TestCase):
             self.assertRegex(line, ".*.so.* => /.*")
 
     def test_ldd(self):
-        libset = LibrarySet()
-        libset.add(Library(soname='libdummy.so.256'))
+        lib = Library()
+        lib.soname = 'libdummy.so.256'
+        libset = LibrarySet([lib])
 
         output = libset.ldd_format()
 
@@ -130,8 +119,10 @@ class LibrarySetTest(unittest.TestCase):
     def test_set(self):
         libset = LibrarySet()
 
-        lib1 = Library(soname="libnotalib.so")
-        lib2 = Library(soname="libnotalib.so")
+        lib1 = Library()
+        lib1.soname = "libnotalib.so"
+        lib2 = Library()
+        lib2.soname = "libnotalib.so"
         lib2.binary_path = "/tmp/notalib.so"
 
         libset.add(lib1)
@@ -140,4 +131,3 @@ class LibrarySetTest(unittest.TestCase):
         self.assertEqual(len(libset), 1)
         saved_lib = libset.pop()
         self.assertEqual(saved_lib.binary_path, "/tmp/notalib.so")
-

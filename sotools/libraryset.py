@@ -25,9 +25,28 @@ class Library:
     Relevant ELF header fields used in the dynamic linking of libraries
     """
 
-    # TODO Change the file parameter to accept a path-like object
-    def __init__(self, file=None, soname=""):
-        self.soname = soname
+    @classmethod
+    def from_path(cls, path):
+        library = cls()
+
+        with open(path, 'rb') as file:
+            try:
+                for section in ELFFile(file).iter_sections():
+                    if isinstance(section, GNUVerDefSection):
+                        library.__parse_ver_def(section)
+                    elif isinstance(section, GNUVerNeedSection):
+                        library.__parse_ver_need(section)
+                    elif isinstance(section, DynamicSection):
+                        library.__parse_dynamic(section)
+                library.binary_path = getattr(file, 'name', file)
+            except (ELFError, AttributeError) as err:
+                logging.error("Error parsing '%s' for ELF data: %s",
+                              getattr(file, 'name', file), err)
+
+        return library
+
+    def __init__(self):
+        self.soname = ''
         self.dyn_dependencies = set()
         self.required_versions = {}
         self.defined_versions = set()
@@ -35,21 +54,6 @@ class Library:
         self.rpath = []
         self.runpath = []
         self.binary_path = None
-
-        if file:
-            try:
-                for section in ELFFile(file).iter_sections():
-                    if isinstance(section, GNUVerDefSection):
-                        self.__parse_ver_def(section)
-                    elif isinstance(section, GNUVerNeedSection):
-                        self.__parse_ver_need(section)
-                    elif isinstance(section, DynamicSection):
-                        self.__parse_dynamic(section)
-            except (ELFError, AttributeError) as err:
-                logging.error("Error parsing '%s' for ELF data: %s",
-                              getattr(file, 'name', file), err)
-
-            self.binary_path = getattr(file, 'name', file)
 
     def __parse_dynamic(self, section):
 
@@ -140,8 +144,7 @@ class LibrarySet(set):
         cache = LibrarySet()
 
         for path in map(_process, library_list):
-            with open(path, 'rb') as file:
-                cache.add(Library(file))
+            cache.add(Library.from_path(path))
 
         return cache.resolve()
 
@@ -328,8 +331,7 @@ class LibrarySet(set):
                 if not path:
                     continue
 
-                with open(path, 'rb') as file:
-                    superset.add(Library(file))
+                superset.add(Library.from_path(path))
 
             change = superset.missing_libraries != missing
             missing = superset.missing_libraries

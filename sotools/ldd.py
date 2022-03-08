@@ -17,9 +17,6 @@ def ldd(binary: str):
     if not is_elf(path):
         raise NotELFError
 
-    libs = LibrarySet()
-
-    with open(path, 'rb') as binary:
-        libs.add(Library(binary))
+    libs = LibrarySet([Library.from_path(path)])
 
     return libs.resolve()

@@ -4,23 +4,15 @@ from sotools.libraryset import Library
 
 class LibraryTest(unittest.TestCase):
     def test_library_bad_object(self):
-        lib = Library(file="/tmp/lib.so")
-
-        self.assertFalse(lib.soname)
-
-    def test_library_bad_params(self):
-        lib = Library(file=None, soname="")
-
-        self.assertFalse(lib.soname)
+        with self.assertRaises(Exception):
+            lib = Library.from_path("/tmp/lib.so")
 
     @unittest.skipIf(not resolve('libm.so.6') or not resolve('libc.so.6'), "No library to test with")
     def test_library_eq_library(self):
-        with open(resolve('libm.so.6'), 'rb') as file:
-            sample = Library(file=file)
-            other = Library(file=file)
+        sample = Library.from_path(resolve('libm.so.6'))
+        other = Library.from_path(resolve('libm.so.6'))
 
-        with open(resolve('libc.so.6'), 'rb') as file:
-            different = Library(file=file)
+        different = Library.from_path(resolve('libc.so.6'))
 
         self.assertEqual(sample, other)
         self.assertEqual(other, sample)
@@ -29,8 +21,7 @@ class LibraryTest(unittest.TestCase):
 
     @unittest.skipIf(not resolve('libm.so.6'), "No library to test with")
     def test_library_eq_any(self):
-        with open(resolve('libm.so.6'), 'rb') as file:
-            sample = Library(file=file)
+        sample = Library.from_path(resolve('libm.so.6'))
 
         self.assertNotEqual(sample, 'libm.so.6')
         self.assertNotEqual('libm.so.6', sample)
