@@ -8,7 +8,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-DEPENDENCIES = []
+DEPENDENCIES = ['pyelftools']
 
 try:
     with open('requirements.txt') as fp:
