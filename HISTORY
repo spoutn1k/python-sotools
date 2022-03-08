@@ -2,3 +2,4 @@
 ---------
 
 - Added dynamic cache parsing
+- Added Library.from_path to generate a Library object from a given path
