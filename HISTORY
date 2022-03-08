@@ -1,5 +1,5 @@
-0.0.3
----------
+0.0.3 (08-03-2022)
+------------------
 
 - Added dynamic cache parsing
 - Added Library.from_path to generate a Library object from a given path
