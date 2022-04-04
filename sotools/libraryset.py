@@ -106,6 +106,9 @@ class Library:
             return self.soname > rhs.soname
         return NotImplemented
 
+    def __repr__(self):
+        return f"'{self.soname}' from '{self.binary_path}'"
+
 
 class LibrarySet(set):
     """
