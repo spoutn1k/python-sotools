@@ -3,13 +3,15 @@ import struct
 from functools import lru_cache
 
 
-class Flags:
+class Flags(int):
     FLAG_ANY = -1
+
     FLAG_TYPE_MASK = 0x00ff
     FLAG_LIBC4 = 0x0000
     FLAG_ELF = 0x0001
     FLAG_ELF_LIBC5 = 0x0002
     FLAG_ELF_LIBC6 = 0x0003
+
     FLAG_REQUIRED_MASK = 0xff00
     FLAG_SPARC_LIB64 = 0x0100
     FLAG_IA64_LIB64 = 0x0200
@@ -27,6 +29,43 @@ class Flags:
     FLAG_MIPS64_LIBN64_NAN2008 = 0x0e00
     FLAG_RISCV_FLOAT_ABI_SOFT = 0x0f00
     FLAG_RISCV_FLOAT_ABI_DOUBLE = 0x1000
+
+    TYPES_DESCR = {
+        FLAG_LIBC4: "libc4",
+        FLAG_ELF: "ELF",
+        FLAG_ELF_LIBC5: "libc5",
+        FLAG_ELF_LIBC6: "libc6",
+    }
+
+    REQUIRED_DESCR = {
+        0: '',
+        FLAG_SPARC_LIB64: ",64bit",
+        FLAG_IA64_LIB64: ",IA-64",
+        FLAG_X8664_LIB64: ",x86-64",
+        FLAG_S390_LIB64: ",64bit",
+        FLAG_POWERPC_LIB64: ",64bit",
+        FLAG_MIPS64_LIBN32: ",N32",
+        FLAG_MIPS64_LIBN64: ",64bit",
+        FLAG_X8664_LIBX32: ",x32",
+        FLAG_ARM_LIBHF: ",hard-float",
+        FLAG_AARCH64_LIB64: ",AArch64",
+        FLAG_ARM_LIBSF: ",soft-float",
+        FLAG_MIPS_LIB32_NAN2008: ",nan2008",
+        FLAG_MIPS64_LIBN32_NAN2008: ",N32,nan2008",
+        FLAG_MIPS64_LIBN64_NAN2008: ",64bit,nan2008",
+        FLAG_RISCV_FLOAT_ABI_SOFT: ",soft-float",
+        FLAG_RISCV_FLOAT_ABI_DOUBLE: ",double-float",
+    }
+
+    def __str__(self):
+        type_flag = self & Flags.FLAG_TYPE_MASK
+        required_flag = self & Flags.FLAG_REQUIRED_MASK
+
+        type_str = Flags.TYPES_DESCR.get(type_flag, 'unknown')
+        required_str = Flags.REQUIRED_DESCR.get(required_flag,
+                                                str(required_flag))
+
+        return f"{type_str}{required_str}"
 
 
 DATATYPES = {
@@ -158,6 +197,29 @@ def _cache_type(data: bytes):
     return (_CacheType.UNKNOWN, 0)
 
 
+class CacheElement:
+    """
+    Functionnally identical to FileEntry with the references resolved and
+    helper functions
+    """
+
+    fields = {
+        'soname': str,
+        'path': str,
+        'flags': Flags,
+    }
+
+    def __init__(self, *args, **kwargs):
+        for field, initializer in self.__class__.fields.items():
+            setattr(self, field, initializer(kwargs.get(field, initializer())))
+
+    def __hash__(self):
+        return hash(self.soname + str(self.flags))
+
+    def __repr__(self):
+        return f"{self.soname} ({self.flags}) => {self.path}"
+
+
 def _cache_libraries(data: bytes):
     """ -> dict[str, str]
     From bytes, extract a header, then library entries and finally lookup
@@ -188,10 +250,12 @@ def _cache_libraries(data: bytes):
         value = struct.unpack_from(f"{terminator}s", data,
                                    header.offset + entry.value)[0]
 
-        return (key.decode(), value.decode())
+        return CacheElement(soname=key.decode(),
+                            path=value.decode(),
+                            flags=entry.flags)
 
     try:
-        return dict(map(_lookup, _entries(data)))
+        return set(map(_lookup, _entries(data)))
     except struct.error as err:
         raise Exception("Failed retrieving data from cache") from err
 
@@ -210,7 +274,8 @@ def host_libraries():
     try:
         libs = _cache_libraries(cache)
     except Exception as err:
-        logging.debug("DLCache parsing failed: %s", str(err))
+        #logging.debug("DLCache parsing failed: %s", str(err))
+        print("DLCache parsing failed: %s", str(err))
         libs = {}
 
     return libs
