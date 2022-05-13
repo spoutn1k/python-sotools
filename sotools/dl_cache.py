@@ -28,6 +28,37 @@ class Flags:
     FLAG_RISCV_FLOAT_ABI_SOFT = 0x0f00
     FLAG_RISCV_FLOAT_ABI_DOUBLE = 0x1000
 
+    _descriptions = {
+        FLAG_LIBC4: "libc4",
+        FLAG_ELF: "ELF",
+        FLAG_ELF_LIBC5: "libc5",
+        FLAG_ELF_LIBC6: "libc6",
+        FLAG_SPARC_LIB64: "64bit",
+        FLAG_IA64_LIB64: "IA-64",
+        FLAG_X8664_LIB64: "x86-64",
+        FLAG_S390_LIB64: "64bit",
+        FLAG_POWERPC_LIB64: "64bit",
+        FLAG_MIPS64_LIBN32: "N32",
+        FLAG_MIPS64_LIBN64: "64bit",
+        FLAG_X8664_LIBX32: "x32",
+        FLAG_ARM_LIBHF: "hard-float",
+        FLAG_AARCH64_LIB64: "AArch64",
+        FLAG_ARM_LIBSF: "soft-float",
+        FLAG_MIPS_LIB32_NAN2008: "nan2008",
+        FLAG_MIPS64_LIBN32_NAN2008: "N32,nan2008",
+        FLAG_MIPS64_LIBN64_NAN2008: "64bit,nan2008",
+        FLAG_RISCV_FLOAT_ABI_SOFT: "soft-float",
+        FLAG_RISCV_FLOAT_ABI_DOUBLE: "double-float",
+    }
+
+    @classmethod
+    def description(cls, value: int):
+        return ",".join([
+            cls._descriptions.get(value & cls.FLAG_TYPE_MASK, "unknown"),
+            cls._descriptions.get(value & cls.FLAG_REQUIRED_MASK,
+                                  str(value & cls.FLAG_REQUIRED_MASK))
+        ])
+
 
 DATATYPES = {
     'int32_t': (4, 'i', int),
@@ -123,23 +154,6 @@ def _format_error(*args, **kwargs):
     raise Exception("Data does not match a dynamic library cache")
 
 
-class _CacheHeader:
-    methods = {
-        _CacheType.UNKNOWN: _format_error,
-        _CacheType.NEW_FORMAT: _CacheHeaderNew.deserialize,
-        _CacheType.OLD_FORMAT: _CacheHeaderOld.deserialize
-    }
-
-    @classmethod
-    def deserialize(cls, data: bytes):
-        cache_format, offset = _cache_type(data)
-
-        header = cls.methods.get(cache_format, _format_error)(data[offset:])
-        header.offset = offset
-
-        return header
-
-
 def _cache_type(data: bytes):
     """ -> tuple[int]
     Determine the type of cache (from_CacheType) and the offset
@@ -156,6 +170,23 @@ def _cache_type(data: bytes):
         return (_CacheType.OLD_FORMAT, 0)
 
     return (_CacheType.UNKNOWN, 0)
+
+
+class _CacheHeader:
+    methods = {
+        _CacheType.UNKNOWN: _format_error,
+        _CacheType.NEW_FORMAT: _CacheHeaderNew.deserialize,
+        _CacheType.OLD_FORMAT: _CacheHeaderOld.deserialize
+    }
+
+    @classmethod
+    def deserialize(cls, data: bytes):
+        cache_format, offset = _cache_type(data)
+
+        header = cls.methods.get(cache_format, _format_error)(data[offset:])
+        header.offset = offset
+
+        return header
 
 
 def _cache_libraries(data: bytes):
@@ -188,7 +219,7 @@ def _cache_libraries(data: bytes):
         value = struct.unpack_from(f"{terminator}s", data,
                                    header.offset + entry.value)[0]
 
-        return (key.decode(), value.decode())
+        return (key.decode(), (entry.flags, value.decode()))
 
     try:
         return dict(map(_lookup, _entries(data)))
@@ -213,4 +244,4 @@ def host_libraries():
         logging.debug("DLCache parsing failed: %s", str(err))
         libs = {}
 
-    return libs
+    return dict(map(lambda x: (x[0], x[1][1]), libs.items()))
