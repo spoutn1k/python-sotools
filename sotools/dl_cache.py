@@ -59,6 +59,19 @@ class Flags:
                                   str(value & cls.FLAG_REQUIRED_MASK))
         ])
 
+    @classmethod
+    def is_64bits(cls, value: int):
+        return value & cls.FLAG_REQUIRED_MASK in {
+            cls.FLAG_SPARC_LIB64,
+            cls.FLAG_IA64_LIB64,
+            cls.FLAG_X8664_LIB64,
+            cls.FLAG_S390_LIB64,
+            cls.FLAG_POWERPC_LIB64,
+            cls.FLAG_MIPS64_LIBN64,
+            cls.FLAG_AARCH64_LIB64,
+            cls.FLAG_MIPS64_LIBN64_NAN2008,
+        }
+
 
 DATATYPES = {
     'int32_t': (4, 'i', int),
@@ -245,3 +258,28 @@ def host_libraries(cache_file="/etc/ld.so.cache"):
         libs = {}
 
     return dict(map(lambda x: (x[0], x[1][1]), libs.items()))
+
+
+@lru_cache()
+def host_libraries_64bits(cache_file="/etc/ld.so.cache"):
+    """
+    Returns a dictionary with the contents of /etc/ld.so.cache
+    Can be used to assume what libraries are installed on the system and where
+    The keys are libraries' sonames; the values are the paths at which the
+    corresponding shared object can be found
+    """
+    with open(cache_file, 'rb') as cache_file:
+        cache = cache_file.read()
+
+    try:
+        libs = _cache_libraries(cache)
+    except Exception as err:
+        logging.debug("DLCache parsing failed: %s", str(err))
+        libs = {}
+
+    def _generate_values():
+        for soname, data in libs.items():
+            if Flags.is_64bits(data[0]):
+                yield (soname, data[1])
+
+    return dict(_generate_values())
