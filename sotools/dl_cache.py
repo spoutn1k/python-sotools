@@ -228,14 +228,14 @@ def _cache_libraries(data: bytes):
 
 
 @lru_cache()
-def host_libraries():
+def host_libraries(cache_file="/etc/ld.so.cache"):
     """
     Returns a dictionary with the contents of /etc/ld.so.cache
     Can be used to assume what libraries are installed on the system and where
     The keys are libraries' sonames; the values are the paths at which the
     corresponding shared object can be found
     """
-    with open('/etc/ld.so.cache', 'rb') as cache_file:
+    with open(cache_file, 'rb') as cache_file:
         cache = cache_file.read()
 
     try:
