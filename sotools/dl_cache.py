@@ -1,4 +1,5 @@
-import sys, platform
+import sys
+import platform
 import logging
 import struct
 from functools import lru_cache
@@ -266,7 +267,7 @@ def _cache_libraries(data: bytes):
         return (key.decode(), (entry.flags, value.decode()))
 
     try:
-        return map(_lookup, _entries(data))
+        return list(map(_lookup, _entries(data)))
     except struct.error as err:
         raise Exception("Failed retrieving data from cache") from err
 
