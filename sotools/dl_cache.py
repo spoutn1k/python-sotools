@@ -1,3 +1,4 @@
+import sys, platform
 import logging
 import struct
 from functools import lru_cache
@@ -71,6 +72,33 @@ class Flags:
             cls.FLAG_AARCH64_LIB64,
             cls.FLAG_MIPS64_LIBN64_NAN2008,
         }
+
+    @classmethod
+    def expected_flags(cls, executable: str = sys.executable):
+        """
+        Returns a integer value representing the expected flag value from the
+        cache, or None if not found
+        """
+        # Return a machine name, from the 'uname' system call
+        machine = platform.machine()
+        # Use the provided path to get a bit number
+        bits, _ = platform.architecture(executable)
+
+        # Reference of expected flags from (machine x bits)
+        # Found in glibc:/sysdeps/unix/sysv/linux/<ARCH>/dl-cache.h
+        matches = dict([
+            (('x86_64', '64bit'), cls.FLAG_X8664_LIB64 | cls.FLAG_ELF_LIBC6),
+            (('x86_64', '32bit'), cls.FLAG_X8664_LIBX32 | cls.FLAG_ELF_LIBC6),
+            (('ppc64le', '64bit'),
+             cls.FLAG_POWERPC_LIB64 | cls.FLAG_ELF_LIBC6),
+            (('arm', '32bit'), cls.FLAG_ARM_LIBHF | cls.FLAG_ELF_LIBC6),
+            (('aarch64', '64bit'),
+             cls.FLAG_AARCH64_LIB64 | cls.FLAG_ELF_LIBC6),
+            (('aarch64_be', '64bit'),
+             cls.FLAG_AARCH64_LIB64 | cls.FLAG_ELF_LIBC6),
+        ])
+
+        return matches.get((machine, bits))
 
 
 DATATYPES = {
@@ -241,29 +269,15 @@ def _cache_libraries(data: bytes):
 
 
 @lru_cache()
-def host_libraries(cache_file="/etc/ld.so.cache"):
+def cache_libraries(cache_file: str = "/etc/ld.so.cache", flags: int = None):
     """
-    Returns a dictionary with the contents of /etc/ld.so.cache
-    Can be used to assume what libraries are installed on the system and where
-    The keys are libraries' sonames; the values are the paths at which the
-    corresponding shared object can be found
-    """
-    with open(cache_file, 'rb') as cache_file:
-        cache = cache_file.read()
+    Returns a dictionary with the contents of the given cache file
+    (/etc/ld.so.cache by default)
 
-    try:
-        libs = _cache_libraries(cache)
-    except Exception as err:
-        logging.debug("DLCache parsing failed: %s", str(err))
-        libs = {}
+    cache: path towards a linker cache file
+    flags: flag value to look for. A value of None will return the whole cache,
+        a non-null value will be used to filter out mismatching entries
 
-    return dict(map(lambda x: (x[0], x[1][1]), libs.items()))
-
-
-@lru_cache()
-def host_libraries_64bits(cache_file="/etc/ld.so.cache"):
-    """
-    Returns a dictionary with the contents of /etc/ld.so.cache
     Can be used to assume what libraries are installed on the system and where
     The keys are libraries' sonames; the values are the paths at which the
     corresponding shared object can be found
@@ -279,7 +293,11 @@ def host_libraries_64bits(cache_file="/etc/ld.so.cache"):
 
     def _generate_values():
         for soname, data in libs.items():
-            if Flags.is_64bits(data[0]):
+            if flags is None or data[0] == flags:
                 yield (soname, data[1])
 
     return dict(_generate_values())
+
+
+def host_libraries(cache_file="/etc/ld.so.cache"):
+    return cache_libraries(cache_file)
