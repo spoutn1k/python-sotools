@@ -6,7 +6,7 @@ Rules in ld.so(8)
 import os
 from functools import lru_cache
 from pathlib import Path
-from sotools.dl_cache import host_libraries
+from sotools.dl_cache import cache_libraries
 
 
 class LinkingError(Exception):
@@ -25,7 +25,7 @@ def _linker_path():
     return (ld_library_path, default_path)
 
 
-def resolve(soname, rpath=None, runpath=None):
+def resolve(soname, rpath=None, runpath=None, arch_flags=None):
     """
     Get a path towards a library from a given soname.
     Implements system rules and takes the environment into account
@@ -34,6 +34,7 @@ def resolve(soname, rpath=None, runpath=None):
     found = None
     rpath = rpath or []
     runpath = runpath or []
+    cache_entries = cache_libraries(arch_flags=arch_flags)
 
     def _valid(path):
         return os.path.exists(path) and os.path.isdir(path)
@@ -46,8 +47,8 @@ def resolve(soname, rpath=None, runpath=None):
         if os.path.exists(potential_lib):
             found = potential_lib
 
-    if not found and soname in host_libraries().keys():
-        found = host_libraries()[soname]
+    if not found and soname in cache_entries:
+        found = cache_entries[soname]
 
     if not found:
         for dir_ in filter(_valid, default_paths):

@@ -29,11 +29,14 @@ class Flags:
     FLAG_RISCV_FLOAT_ABI_SOFT = 0x0f00
     FLAG_RISCV_FLOAT_ABI_DOUBLE = 0x1000
 
-    _descriptions = {
+    _type_descriptions = {
         FLAG_LIBC4: "libc4",
         FLAG_ELF: "ELF",
         FLAG_ELF_LIBC5: "libc5",
         FLAG_ELF_LIBC6: "libc6",
+    }
+
+    _required_descriptions = {
         FLAG_SPARC_LIB64: "64bit",
         FLAG_IA64_LIB64: "IA-64",
         FLAG_X8664_LIB64: "x86-64",
@@ -55,9 +58,9 @@ class Flags:
     @classmethod
     def description(cls, value: int):
         return ",".join([
-            cls._descriptions.get(value & cls.FLAG_TYPE_MASK, "unknown"),
-            cls._descriptions.get(value & cls.FLAG_REQUIRED_MASK,
-                                  str(value & cls.FLAG_REQUIRED_MASK))
+            cls._type_descriptions.get(value & cls.FLAG_TYPE_MASK, "unknown"),
+            cls._required_descriptions.get(value & cls.FLAG_REQUIRED_MASK,
+                                           str(value & cls.FLAG_REQUIRED_MASK))
         ])
 
     @classmethod
@@ -263,25 +266,31 @@ def _cache_libraries(data: bytes):
         return (key.decode(), (entry.flags, value.decode()))
 
     try:
-        return dict(map(_lookup, _entries(data)))
+        return map(_lookup, _entries(data))
     except struct.error as err:
         raise Exception("Failed retrieving data from cache") from err
 
 
 @lru_cache()
-def cache_libraries(cache_file: str = "/etc/ld.so.cache", flags: int = None):
+def cache_libraries(cache_file: str = "/etc/ld.so.cache",
+                    arch_flags: int = None):
     """
     Returns a dictionary with the contents of the given cache file
     (/etc/ld.so.cache by default)
 
     cache: path towards a linker cache file
-    flags: flag value to look for. A value of None will return the whole cache,
-        a non-null value will be used to filter out mismatching entries
+    flags: flag value to look for. A value of will return binaries matching the interpreter,
+        a non-null value will be used to filter out mismatching entries. See Flags.expected_flags
 
     Can be used to assume what libraries are installed on the system and where
     The keys are libraries' sonames; the values are the paths at which the
     corresponding shared object can be found
     """
+
+    _arch_flags = arch_flags
+    if _arch_flags is None:
+        _arch_flags = Flags.expected_flags()
+
     with open(cache_file, 'rb') as cache_file:
         cache = cache_file.read()
 
@@ -289,11 +298,11 @@ def cache_libraries(cache_file: str = "/etc/ld.so.cache", flags: int = None):
         libs = _cache_libraries(cache)
     except Exception as err:
         logging.debug("DLCache parsing failed: %s", str(err))
-        libs = {}
+        libs = []
 
     def _generate_values():
-        for soname, data in libs.items():
-            if flags is None or data[0] == flags:
+        for (soname, data) in libs:
+            if data[0] == _arch_flags:
                 yield (soname, data[1])
 
     return dict(_generate_values())
