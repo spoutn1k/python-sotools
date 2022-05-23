@@ -1,8 +1,10 @@
 import unittest
 from pathlib import Path
-from sotools.dl_cache import (_cache_type, _cache_libraries, _CacheType,
-                              _CacheHeader, _CacheHeaderNew, _CacheHeaderOld,
-                              _FileEntryNew, _FileEntryOld, host_libraries)
+from sotools.dl_cache.dl_cache import (_cache_type, _cache_libraries,
+                                       _CacheType, _CacheHeader,
+                                       _CacheHeaderNew, _CacheHeaderOld,
+                                       _FileEntryNew, _FileEntryOld)
+from sotools.dl_cache import host_libraries
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'
 MODERN_CACHE = f'{Path(__file__).parent}/assets/modern.so.cache'
