@@ -1,7 +1,7 @@
 import logging
 import struct
-from sotools.dl_cache import _CacheHeader
-from sotools.structure import Struct
+from sotools.dl_cache.dl_cache import _CacheHeader
+from sotools.dl_cache.structure import BinaryStruct
 
 # Appears as (uint32_t)-358342284 in glibc:/elf/cache.c
 CACHE_EXTENSION_MAGIC = 3936625012
@@ -13,22 +13,20 @@ class CacheExtensionTag:
     COUNT = 2
 
 
-class CacheExtensionSection(Struct):
-    structure = [
+class CacheExtensionSection(BinaryStruct):
+    __structure__ = [
         ('tag', 'uint32_t'),
         ('flags', 'uint32_t'),
         ('offset', 'uint32_t'),
         ('size', 'uint32_t'),
     ]
-    size = 16
 
 
-class CacheExtension(Struct):
-    structure = [
+class CacheExtension(BinaryStruct):
+    __structure__ = [
         ('magic', 'uint32_t'),
         ('count', 'uint32_t'),
     ]
-    size = 8
 
 
 def glibc_hwcaps_string(data, entry):
@@ -45,8 +43,10 @@ def glibc_hwcaps_string(data, entry):
     extension_header = CacheExtension.deserialize(data[extension_start:])
 
     def parse_extensions():
+        header_size = BinaryStruct.sizeof(CacheExtension)
+        section_size = BinaryStruct.sizeof(CacheExtensionSection)
         for i in range(extension_header.count):
-            offset = extension_start + extension_header.size + i * CacheExtensionSection.size
+            offset = extension_start + header_size + i * section_size
             yield CacheExtensionSection.deserialize(data[offset:])
 
     # Filter out all non-hwcap related extensions to match the entry index
