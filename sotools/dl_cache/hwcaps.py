@@ -1,7 +1,8 @@
-import logging
 import struct
+import logging
 from sotools.dl_cache.dl_cache import _CacheHeader
-from sotools.dl_cache.structure import BinaryStruct
+from sotools.dl_cache.structure import (BinaryStruct,
+                                        deserialize_null_terminated_string)
 
 # Appears as (uint32_t)-358342284 in glibc:/elf/cache.c
 CACHE_EXTENSION_MAGIC = 3936625012
@@ -68,7 +69,4 @@ def glibc_hwcaps_string(data, entry):
     hwcap_data = data[hwcap_entry.offset:hwcap_entry.offset + hwcap_entry.size]
     hwcap_pointer = struct.unpack("I", hwcap_data)[0]
 
-    terminator = data[hwcap_pointer:].find(0x0)
-    b = struct.unpack_from(f"{terminator}s", data, hwcap_pointer)[0]
-
-    return b.decode()
+    return deserialize_null_terminated_string(data[hwcap_pointer:])

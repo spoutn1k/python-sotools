@@ -1,4 +1,5 @@
 import struct
+import logging
 
 DATATYPES = {
     # Datatypes used to describe the binary structure of the classes defined
@@ -85,3 +86,15 @@ class BinaryStruct:
                     yield f"{attribute}={getattr(self, attribute, None)}"
 
         return f"{self.__class__.__name__}: " + ", ".join(_format_attributes())
+
+
+def deserialize_null_terminated_string(data):
+    terminator = data.find(0x0)
+
+    try:
+        bytes_, = struct.unpack_from(f"{terminator}s", data, 0)
+    except struct.error as err:
+        logging.error("Failed to deserialize requested string: %s", str(err))
+        return ""
+
+    return bytes_.decode(errors='replace')

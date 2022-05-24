@@ -1,5 +1,4 @@
-import struct
-from sotools.dl_cache.structure import BinaryStruct
+from sotools.dl_cache.structure import BinaryStruct, deserialize_null_terminated_string
 
 
 class _CacheType:
@@ -107,17 +106,10 @@ def _cache_libraries(data: bytes):
         """
         Translate string references to strings
         """
-        terminator = data[header.offset + entry.key:].find(0x0)
-        key = struct.unpack_from(f"{terminator}s", data,
-                                 header.offset + entry.key)[0]
+        lookup = deserialize_null_terminated_string
+        key = lookup(data[header.offset + entry.key:])
+        value = lookup(data[header.offset + entry.value:])
 
-        terminator = data[header.offset + entry.value:].find(0x0)
-        value = struct.unpack_from(f"{terminator}s", data,
-                                   header.offset + entry.value)[0]
+        return (key, (entry.flags, value))
 
-        return (key.decode(), (entry.flags, value.decode()))
-
-    try:
-        return list(map(_lookup, _entries(data)))
-    except struct.error as err:
-        raise Exception("Failed retrieving data from cache") from err
+    return list(map(_lookup, _entries(data)))
