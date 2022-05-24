@@ -88,6 +88,7 @@ def _cache_libraries(data: bytes):
     the names associated with each entry
     """
     header = _CacheHeader.deserialize(data)
+    data = data[header.offset:]
 
     def _entries(data: bytes) -> list:
         """
@@ -98,7 +99,7 @@ def _cache_libraries(data: bytes):
         entry_size = BinaryStruct.sizeof(entry_type)
 
         for index in range(header.nlibs):
-            offset = header.offset + header_size + index * entry_size
+            offset = header_size + index * entry_size
             entry = entry_type.deserialize(data[offset:offset + entry_size])
             yield entry
 
@@ -107,8 +108,8 @@ def _cache_libraries(data: bytes):
         Translate string references to strings
         """
         lookup = deserialize_null_terminated_string
-        key = lookup(data[header.offset + entry.key:])
-        value = lookup(data[header.offset + entry.value:])
+        key = lookup(data[entry.key:])
+        value = lookup(data[entry.value:])
 
         return (key, (entry.flags, value))
 

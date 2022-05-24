@@ -7,7 +7,7 @@ from sotools.dl_cache.dl_cache import (_cache_type, _cache_libraries,
                                        _CacheType, _CacheHeader,
                                        _CacheHeaderNew, _CacheHeaderOld,
                                        _FileEntryNew, _FileEntryOld)
-from sotools.dl_cache import host_libraries
+from sotools.dl_cache import cache_libraries
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'
 MODERN_CACHE = f'{Path(__file__).parent}/assets/modern.so.cache'
@@ -89,7 +89,8 @@ class DLCacheTest(unittest.TestCase):
             libs = _cache_libraries(cache_data[:100])
 
     def test_wrapper(self):
-        self.assertTrue(host_libraries())
+        self.assertTrue(cache_libraries(cache_file=MODERN_CACHE))
+        self.assertTrue(cache_libraries(cache_file=EMBEDDED_CACHE))
 
     def test_sizeof(self):
 
