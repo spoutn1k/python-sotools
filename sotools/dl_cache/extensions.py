@@ -24,3 +24,18 @@ class CacheExtension(BinaryStruct):
         ('magic', 'uint32_t'),
         ('count', 'uint32_t'),
     ]
+
+
+def cache_extension_sections(data: bytes):
+
+    extension_header = CacheExtension.deserialize(data)
+
+    header_size = BinaryStruct.sizeof(CacheExtension)
+    section_size = BinaryStruct.sizeof(CacheExtensionSection)
+
+    def parse_sections():
+        for i in range(extension_header.count):
+            yield CacheExtensionSection.deserialize(data[header_size +
+                                                         i * section_size:])
+
+    return list(parse_sections())

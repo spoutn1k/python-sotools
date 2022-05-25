@@ -55,6 +55,10 @@ class BinaryStruct:
 
     @classmethod
     def deserialize(cls, data: bytes):
+        if not isinstance(data, bytes):
+            raise NotImplementedError(
+                f"Unsupported value for deserialization buffer: {type(data)}")
+
         serialized = 0
         entry = cls()
 
@@ -90,6 +94,10 @@ class BinaryStruct:
 
 def deserialize_null_terminated_string(data):
     terminator = data.find(0x0)
+
+    if terminator == -1:
+        logging.debug("Failed to find null byte in buffer")
+        return ""
 
     try:
         bytes_, = struct.unpack_from(f"{terminator}s", data, 0)

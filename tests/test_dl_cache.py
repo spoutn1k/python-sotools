@@ -1,16 +1,20 @@
 import unittest
 from pathlib import Path
-from sotools.dl_cache.structure import BinaryStruct
-from sotools.dl_cache.hwcaps import (CacheExtension, CacheExtensionSection,
-                                     CacheExtensionTag)
+from sotools.dl_cache.structure import (BinaryStruct,
+                                        deserialize_null_terminated_string)
+from sotools.dl_cache.extensions import (CacheExtension, CacheExtensionSection,
+                                         CacheExtensionTag,
+                                         cache_extension_sections)
 from sotools.dl_cache.dl_cache import (_cache_type, _cache_libraries,
                                        _CacheType, _CacheHeader,
                                        _CacheHeaderNew, _CacheHeaderOld,
                                        _FileEntryNew, _FileEntryOld)
+from sotools.dl_cache.hwcaps import (dl_cache_hwcap_extension, HWCAPSection)
 from sotools.dl_cache import cache_libraries
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'
 MODERN_CACHE = f'{Path(__file__).parent}/assets/modern.so.cache'
+HWCAPS_CACHE = f'{Path(__file__).parent}/assets/with_hwcaps.so.cache'
 
 
 class DLCacheTest(unittest.TestCase):
@@ -150,15 +154,9 @@ class DLCacheTest(unittest.TestCase):
             cache_data = cache_file.read()
 
         header = _CacheHeader.deserialize(cache_data)
-        extension_header = CacheExtension.deserialize(
-            cache_data[header.extension_offset:])
-        header_size = BinaryStruct.sizeof(CacheExtension)
-        section_size = BinaryStruct.sizeof(CacheExtensionSection)
 
-        for i in range(extension_header.count):
-            section = CacheExtensionSection.deserialize(
-                cache_data[header.extension_offset + header_size +
-                           i * section_size:])
+        for section in cache_extension_sections(
+                cache_data[header.offset + header.extension_offset:]):
             self.assertIn(
                 section.tag, {
                     CacheExtensionTag.TAG_GENERATOR,
@@ -166,3 +164,38 @@ class DLCacheTest(unittest.TestCase):
                 })
             self.assertNotEqual(section.offset, 0)
             self.assertNotEqual(section.size, 0)
+
+    def test_deserialize_nts(self):
+        string = "I am a string"
+        data = f"{string}\0".encode()
+
+        self.assertEqual(deserialize_null_terminated_string(data), string)
+        self.assertEqual(deserialize_null_terminated_string(string.encode()),
+                         "")
+
+    def test_get_hwcap_string(self):
+        with open(HWCAPS_CACHE, 'rb') as cache_file:
+            cache_data = cache_file.read()
+
+        header = _CacheHeader.deserialize(cache_data)
+
+        for section in cache_extension_sections(
+                cache_data[header.offset + header.extension_offset:]):
+            if section.tag == CacheExtensionTag.TAG_GLIBC_HWCAPS:
+                hwcap_section = HWCAPSection(section)
+                self.assertTrue(hwcap_section.string_value(cache_data))
+
+    def test_assert_hwcap_reference(self):
+        entry = _FileEntryNew()
+
+        entry.hwcap = 4611686018427387904
+        self.assertTrue(dl_cache_hwcap_extension(entry))
+
+        entry.hwcap = 0
+        self.assertFalse(dl_cache_hwcap_extension(entry))
+
+        entry.hwcap = 1
+        self.assertFalse(dl_cache_hwcap_extension(entry))
+
+        entry = _FileEntryOld()
+        self.assertFalse(dl_cache_hwcap_extension(entry))
