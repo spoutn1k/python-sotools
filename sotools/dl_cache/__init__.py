@@ -7,6 +7,7 @@ from sotools.dl_cache.dl_cache import (_CacheHeader, _FileEntryNew)
 from sotools.dl_cache.structure import (BinaryStruct,
                                         deserialize_null_terminated_string)
 from sotools.dl_cache.hwcaps import (HWCAPSection, dl_cache_hwcap_extension)
+from sotools.dl_cache.generator import GeneratorSection
 from sotools.dl_cache.extensions import (cache_extension_sections,
                                          CacheExtensionTag)
 
@@ -114,3 +115,19 @@ def cache_libraries(cache_file: str = "/etc/ld.so.cache",
 
 def host_libraries(cache_file="/etc/ld.so.cache"):
     return cache_libraries(cache_file)
+
+
+def get_generator(data):
+    header = _CacheHeader.deserialize(data)
+    data = data[header.offset:]
+
+    if not header.extension_offset:
+        logger.info("Failed to retrieve generator: no extensions in cache")
+        return ""
+
+    extensions = cache_extension_sections(data[header.extension_offset:])
+
+    for section in extensions:
+        if section.tag == CacheExtensionTag.TAG_GENERATOR:
+            return GeneratorSection(section).string_value(data)
+    return ""
