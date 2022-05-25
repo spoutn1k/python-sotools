@@ -1,5 +1,3 @@
-import struct
-import logging
 from sotools.dl_cache.structure import DATATYPES
 from sotools.dl_cache.extensions import CacheExtensionSection
 

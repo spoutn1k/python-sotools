@@ -8,7 +8,8 @@ from sotools.dl_cache.extensions import (CacheExtension, CacheExtensionSection,
 from sotools.dl_cache.dl_cache import (_cache_type, _CacheType, _CacheHeader,
                                        _CacheHeaderNew, _CacheHeaderOld,
                                        _FileEntryNew, _FileEntryOld)
-from sotools.dl_cache.hwcaps import (dl_cache_hwcap_extension, HWCAPSection)
+from sotools.dl_cache.extensions.hwcaps import (dl_cache_hwcap_extension,
+                                                HWCAPSection)
 from sotools.dl_cache import cache_libraries, _cache_libraries
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'

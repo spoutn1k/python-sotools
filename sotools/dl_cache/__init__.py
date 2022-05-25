@@ -6,8 +6,9 @@ from sotools.dl_cache.flags import Flags
 from sotools.dl_cache.dl_cache import (_CacheHeader, _FileEntryNew)
 from sotools.dl_cache.structure import (BinaryStruct,
                                         deserialize_null_terminated_string)
-from sotools.dl_cache.hwcaps import (HWCAPSection, dl_cache_hwcap_extension)
-from sotools.dl_cache.generator import GeneratorSection
+from sotools.dl_cache.extensions.hwcaps import (HWCAPSection,
+                                                dl_cache_hwcap_extension)
+from sotools.dl_cache.extensions.generator import GeneratorSection
 from sotools.dl_cache.extensions import (cache_extension_sections,
                                          CacheExtensionTag)
 
@@ -122,7 +123,7 @@ def get_generator(data):
     data = data[header.offset:]
 
     if not header.extension_offset:
-        logger.info("Failed to retrieve generator: no extensions in cache")
+        logging.info("Failed to retrieve generator: no extensions in cache")
         return ""
 
     extensions = cache_extension_sections(data[header.extension_offset:])
