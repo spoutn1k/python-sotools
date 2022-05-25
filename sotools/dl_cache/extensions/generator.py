@@ -10,10 +10,7 @@ class GeneratorSection(CacheExtensionSection):
         # Copy to self the fields defined by the class
         for attribute, type_ in CacheExtensionSection.__structure__:
             # Fetch the default for this attribute type
-            if type_ not in DATATYPES:
-                raise NotImplementedError(
-                    f"Unsupported field type for {attribute}: {type_}")
-            _, _, default = DATATYPES[type_]
+            _, _, default = DATATYPES.get(type_, int)
 
             # Access the field value then set it in self
             value = getattr(section, attribute, default())

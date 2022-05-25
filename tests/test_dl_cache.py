@@ -10,7 +10,7 @@ from sotools.dl_cache.dl_cache import (_cache_type, _CacheType, _CacheHeader,
                                        _FileEntryNew, _FileEntryOld)
 from sotools.dl_cache.extensions.hwcaps import (dl_cache_hwcap_extension,
                                                 HWCAPSection)
-from sotools.dl_cache import cache_libraries, _cache_libraries
+from sotools.dl_cache import cache_libraries, _cache_libraries, get_generator
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'
 MODERN_CACHE = f'{Path(__file__).parent}/assets/modern.so.cache'
@@ -185,6 +185,13 @@ class DLCacheTest(unittest.TestCase):
                 hwcap_section = HWCAPSection(section)
                 self.assertTrue(hwcap_section.string_value(cache_data))
 
+        badlength = HWCAPSection(CacheExtensionSection())
+        HWCAPSection.offset = 0
+        HWCAPSection.size = 40
+
+        self.assertEqual(
+            badlength.string_value("Not an int, too short".encode()), "")
+
     def test_assert_hwcap_reference(self):
         entry = _FileEntryNew()
 
@@ -199,3 +206,14 @@ class DLCacheTest(unittest.TestCase):
 
         entry = _FileEntryOld()
         self.assertFalse(dl_cache_hwcap_extension(entry))
+
+    def test_extension_generator(self):
+        with open(MODERN_CACHE, 'rb') as cache_file:
+            cache_data = cache_file.read()
+
+        self.assertTrue(get_generator(cache_data))
+
+        with open(EMBEDDED_CACHE, 'rb') as cache_file:
+            cache_data = cache_file.read()
+
+        self.assertFalse(get_generator(cache_data))
