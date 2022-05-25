@@ -1,10 +1,8 @@
 import struct
 import logging
-from sotools.dl_cache.dl_cache import _CacheHeader
-from sotools.dl_cache.structure import (BinaryStruct, DATATYPES,
+from sotools.dl_cache.structure import (DATATYPES,
                                         deserialize_null_terminated_string)
-from sotools.dl_cache.extensions import (CacheExtensionTag,
-                                         CacheExtensionSection, CacheExtension)
+from sotools.dl_cache.extensions import CacheExtensionSection
 
 # This bit in the hwcap field of struct file_entry_new indicates that
 # the lower 32 bits contain an index into the

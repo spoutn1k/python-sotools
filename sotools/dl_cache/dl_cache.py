@@ -1,4 +1,4 @@
-from sotools.dl_cache.structure import BinaryStruct, deserialize_null_terminated_string
+from sotools.dl_cache.structure import BinaryStruct
 
 
 class _CacheType:
@@ -80,37 +80,3 @@ class _CacheHeader:
         header.offset = offset
 
         return header
-
-
-def _cache_libraries(data: bytes):
-    """ -> dict[str, str]
-    From bytes, extract a header, then library entries and finally lookup
-    the names associated with each entry
-    """
-    header = _CacheHeader.deserialize(data)
-    data = data[header.offset:]
-
-    def _entries(data: bytes) -> list:
-        """
-        Generate a list of entries from the type defined in the header
-        """
-        header_size = BinaryStruct.sizeof(header.__class__)
-        entry_type = header.__class__.entry_type
-        entry_size = BinaryStruct.sizeof(entry_type)
-
-        for index in range(header.nlibs):
-            offset = header_size + index * entry_size
-            entry = entry_type.deserialize(data[offset:offset + entry_size])
-            yield entry
-
-    def _lookup(entry):
-        """
-        Translate string references to strings
-        """
-        lookup = deserialize_null_terminated_string
-        key = lookup(data[entry.key:])
-        value = lookup(data[entry.value:])
-
-        return (key, (entry.flags, value))
-
-    return list(map(_lookup, _entries(data)))

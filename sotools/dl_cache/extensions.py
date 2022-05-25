@@ -35,7 +35,7 @@ def cache_extension_sections(data: bytes):
 
     def parse_sections():
         for i in range(extension_header.count):
-            yield CacheExtensionSection.deserialize(data[header_size +
-                                                         i * section_size:])
+            offset = header_size + i * section_size
+            yield CacheExtensionSection.deserialize(data[offset:])
 
     return list(parse_sections())

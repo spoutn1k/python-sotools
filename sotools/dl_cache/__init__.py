@@ -1,7 +1,76 @@
 import logging
+from typing import List
+from dataclasses import dataclass
 from functools import lru_cache
 from sotools.dl_cache.flags import Flags
-from sotools.dl_cache.dl_cache import _cache_libraries
+from sotools.dl_cache.dl_cache import (_CacheHeader, _FileEntryNew)
+from sotools.dl_cache.structure import (BinaryStruct,
+                                        deserialize_null_terminated_string)
+from sotools.dl_cache.hwcaps import (HWCAPSection, dl_cache_hwcap_extension)
+from sotools.dl_cache.extensions import (cache_extension_sections,
+                                         CacheExtensionTag)
+
+
+@dataclass(frozen=True)
+class ResolvedEntry:
+    key: str
+    value: str
+    flags: int
+    hwcaps: str = ""
+
+
+def _cache_libraries(data: bytes) -> List[ResolvedEntry]:
+    """
+    Return a list of ResolvedEntry objects with all references resolved
+    """
+    header = _CacheHeader.deserialize(data)
+    data = data[header.offset:]
+    extensions = []
+
+    if header.extension_offset:
+        extensions = cache_extension_sections(data[header.extension_offset:])
+
+    def resolve_hwcap_values():
+        for extension in extensions:
+            if extension.tag == CacheExtensionTag.TAG_GLIBC_HWCAPS:
+                yield HWCAPSection(extension).string_value(data)
+
+    hwcap_string_values = list(resolve_hwcap_values())
+
+    def _entries(data: bytes) -> list:
+        """
+        Generate a list of FileEntryXXX from the type defined in the header
+        """
+        header_size = BinaryStruct.sizeof(header.__class__)
+        entry_type = header.__class__.entry_type
+        entry_size = BinaryStruct.sizeof(entry_type)
+
+        for index in range(header.nlibs):
+            offset = header_size + index * entry_size
+            entry = entry_type.deserialize(data[offset:offset + entry_size])
+            yield entry
+
+    def _lookup(entry):
+        """
+        Translate string references to strings
+        """
+        lookup = deserialize_null_terminated_string
+        hwcap_entry_string = ""
+
+        if isinstance(entry,
+                      _FileEntryNew) and dl_cache_hwcap_extension(entry):
+            index = entry.hwcap & ((1 << 32) - 1)
+            if index < len(hwcap_string_values):
+                hwcap_entry_string = hwcap_string_values[index]
+
+        fields = dict(key=lookup(data[entry.key:]),
+                      value=lookup(data[entry.value:]),
+                      flags=entry.flags,
+                      hwcaps=hwcap_entry_string)
+
+        return ResolvedEntry(**fields)
+
+    return list(map(_lookup, _entries(data)))
 
 
 @lru_cache()
@@ -33,10 +102,12 @@ def cache_libraries(cache_file: str = "/etc/ld.so.cache",
         logging.debug("DLCache parsing failed: %s", str(err))
         libs = []
 
+    libs.reverse()
+
     def _generate_values():
-        for (soname, data) in libs:
-            if data[0] == _arch_flags:
-                yield (soname, data[1])
+        for entry in libs:
+            if entry.flags == _arch_flags:
+                yield (entry.key, entry.value)
 
     return dict(_generate_values())
 
