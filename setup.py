@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from pathlib import Path
 import importlib.util
+from pathlib import Path
+from setuptools import setup, find_packages
 
 try:
     # setuptools supports bdist_wheel
@@ -40,8 +41,7 @@ install_options = {
     "description": "python implementation of ld.so rules",
     "long_description": "python implementation of ld.so rules",
     "classifiers": CLASSIFIERS,
-    "packages": MODULES,
-    "package_dir": MODULES,
+    "packages": find_packages(exclude=['tests']),
     "install_requires": DEPENDENCIES,
     "scripts": SCRIPTS,
 }
