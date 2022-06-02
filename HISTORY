@@ -1,3 +1,15 @@
+0.0.5
+------------------
+
+0.0.4 (02-06-2022)
+------------------
+
+- Added Flags class to keep track of available values in DL cache entries
+- Added flag filtering when listing cache entries
+- Added hwcap resolution when listing cache entries
+- Introduced search_cache method to avoid loss of information when casting to dict
+- Created dl_cache module to house all rtld cache operations
+
 0.0.3 (08-03-2022)
 ------------------
 
