@@ -95,7 +95,7 @@ def _cache_libraries(data: bytes) -> List[ResolvedEntry]:
     return list(map(_lookup, _entries(data)))
 
 
-@dataclass
+@dataclass(frozen=True)
 class DynamicLinkerCache:
     file: str
     generator: Optional[str]
@@ -126,7 +126,7 @@ def _parse_cache(
 
 
 def cache_libraries(cache_file: str = "/etc/ld.so.cache",
-                    arch_flags: int = None) -> Dict[str, str]:
+                    arch_flags: Optional[int] = None) -> Dict[str, str]:
     """
     Returns a dictionary with a curated list of the given cache file contents
     (/etc/ld.so.cache by default)
@@ -163,6 +163,34 @@ def cache_libraries(cache_file: str = "/etc/ld.so.cache",
                 yield (entry.key, entry.value)
 
     return dict(_generate_values())
+
+
+def search_cache(soname: str,
+                 cache_file: str = "/etc/ld.so.cache",
+                 arch_flags: Optional[int] = None) -> Optional[str]:
+    """
+    Returns the best match for the given soname in the given cache matching
+    the given flags
+
+    soname: soname to match against the cache
+    cache:  path towards a linker cache file
+    flags:  flag value to look for. A null value will return binaries matching
+        the interpreter, a non-null value will be used to filter out mismatching
+        entries. See Flags.expected_flags to create flag values
+    """
+
+    _arch_flags = arch_flags
+    if _arch_flags is None:
+        _arch_flags = Flags.expected_flags()
+
+    cache = _parse_cache(cache_file)
+
+    for entry in cache.entries:
+        # TODO hwcaps check, OS ABI check
+        if entry.key == soname and entry.flags == _arch_flags:
+            return entry.value
+
+    return None
 
 
 def host_libraries(cache_file="/etc/ld.so.cache"):
