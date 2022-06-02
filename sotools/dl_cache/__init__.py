@@ -109,7 +109,7 @@ def _parse_cache(
         with open(cache_file, 'rb') as cache_file:
             cache_data = cache_file.read()
     except OSError as err:
-        logging.error("Failed to open rtld cache: %s".str(err))
+        logging.error("Failed to open rtld cache: %s", str(err))
         return None
 
     try:
@@ -191,7 +191,3 @@ def search_cache(soname: str,
             return entry.value
 
     return None
-
-
-def host_libraries(cache_file="/etc/ld.so.cache"):
-    return cache_libraries(cache_file)

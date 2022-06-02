@@ -59,6 +59,11 @@ class BinaryStruct:
             raise NotImplementedError(
                 f"Unsupported value for deserialization buffer: {type(data)}")
 
+        if getattr(cls, '__structure__', None) is None:
+            raise NotImplementedError(
+                "Attempting to deserialize class with no __structure__"
+                f" field ({cls.__name__})")
+
         serialized = 0
         entry = cls()
 
@@ -92,17 +97,11 @@ class BinaryStruct:
         return f"{self.__class__.__name__}: " + ", ".join(_format_attributes())
 
 
-def deserialize_null_terminated_string(data):
+def deserialize_null_terminated_string(data: bytes):
     terminator = data.find(0x0)
 
     if terminator == -1:
         logging.debug("Failed to find null byte in buffer")
         return ""
 
-    try:
-        bytes_, = struct.unpack_from(f"{terminator}s", data, 0)
-    except struct.error as err:
-        logging.error("Failed to deserialize requested string: %s", str(err))
-        return ""
-
-    return bytes_.decode(errors='replace')
+    return data[:terminator].decode(errors='replace')

@@ -10,7 +10,9 @@ from sotools.dl_cache.dl_cache import (_cache_type, _CacheType, _CacheHeader,
                                        _FileEntryNew, _FileEntryOld)
 from sotools.dl_cache.extensions.hwcaps import (dl_cache_hwcap_extension,
                                                 HWCAPSection)
-from sotools.dl_cache import cache_libraries, _cache_libraries, get_generator
+from sotools.dl_cache.flags import Flags
+from sotools.dl_cache import (cache_libraries, _cache_libraries, get_generator,
+                              search_cache, _parse_cache, DynamicLinkerCache)
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'
 MODERN_CACHE = f'{Path(__file__).parent}/assets/modern.so.cache'
@@ -18,6 +20,17 @@ HWCAPS_CACHE = f'{Path(__file__).parent}/assets/with_hwcaps.so.cache'
 
 
 class DLCacheTest(unittest.TestCase):
+
+    def test_structure_bad_format(self):
+
+        class MyStruct(BinaryStruct):
+            pass
+
+        with self.assertRaises(NotImplementedError):
+            MyStruct.deserialize("Dummy string".encode())
+
+        with self.assertRaises(NotImplementedError):
+            BinaryStruct.sizeof(MyStruct)
 
     def test_format_detect(self):
         with open(MODERN_CACHE, 'rb') as cache_file:
@@ -93,10 +106,13 @@ class DLCacheTest(unittest.TestCase):
             libs = _cache_libraries(cache_data[:100])
 
     def test_wrapper(self):
+        self.assertFalse(
+            cache_libraries(cache_file=MODERN_CACHE,
+                            arch_flags=Flags.FLAG_SPARC_LIB64))
         self.assertTrue(cache_libraries(cache_file=MODERN_CACHE))
         self.assertTrue(cache_libraries(cache_file=EMBEDDED_CACHE))
 
-    def test_sizeof(self):
+    def test_structure_sizeof(self):
 
         class TestByte(BinaryStruct):
             __structure__ = [('member', 'uint8_t')]
@@ -114,6 +130,30 @@ class DLCacheTest(unittest.TestCase):
         self.assertEqual(BinaryStruct.sizeof(TestBytes), 2)
         self.assertEqual(BinaryStruct.sizeof(TestInt), 4)
         self.assertEqual(BinaryStruct.sizeof(TestLong), 8)
+
+        class TestPadding(BinaryStruct):
+            __structure__ = [('member', 'uint64_t'), (None, 24),
+                             ('other', 'uint32_t')]
+
+        self.assertEqual(BinaryStruct.sizeof(TestPadding), 36)
+
+        class TestPaddingBadFormat(BinaryStruct):
+            __structure__ = [('member', 'uint64_t'), (None, None),
+                             ('other', 'uint32_t')]
+
+        self.assertEqual(BinaryStruct.sizeof(TestPaddingBadFormat), 12)
+
+    def test_structure_deserialize(self):
+
+        class TestStruct(BinaryStruct):
+            __structure__ = [('a', 'uint32_t'), ('b', 'uint8_t')]
+
+        parsed = TestStruct.deserialize(
+            int(10).to_bytes(4, 'big') + int(254).to_bytes(1, 'big'))
+        self.assertIsInstance(parsed, TestStruct)
+
+        with self.assertRaises(NotImplementedError):
+            parsed = TestStruct.deserialize("test")
 
     def test_deserialize_header(self):
         with open(MODERN_CACHE, 'rb') as cache_file:
@@ -207,6 +247,11 @@ class DLCacheTest(unittest.TestCase):
         entry = _FileEntryOld()
         self.assertFalse(dl_cache_hwcap_extension(entry))
 
+    def test_parse_hwcap(self):
+        cache = _parse_cache(HWCAPS_CACHE)
+
+        self.assertTrue(set(filter(lambda x: x.hwcaps, cache.entries)))
+
     def test_extension_generator(self):
         with open(MODERN_CACHE, 'rb') as cache_file:
             cache_data = cache_file.read()
@@ -216,4 +261,17 @@ class DLCacheTest(unittest.TestCase):
         with open(EMBEDDED_CACHE, 'rb') as cache_file:
             cache_data = cache_file.read()
 
-        self.assertFalse(get_generator(cache_data))
+        self.assertIsNone(get_generator(cache_data))
+
+    def test_search_cache(self):
+        self.assertTrue(search_cache('libc.so.6', MODERN_CACHE))
+        self.assertIsNone(search_cache('notalib.so', MODERN_CACHE))
+        self.assertIsNone(
+            search_cache('libc.so.6', MODERN_CACHE, Flags.FLAG_POWERPC_LIB64))
+
+    def test_parse_cache(self):
+        self.assertIsNone(_parse_cache('/not/a/file'))
+        self.assertIsNone(_parse_cache(__file__))
+        self.assertIsInstance(_parse_cache(EMBEDDED_CACHE), DynamicLinkerCache)
+        self.assertIsInstance(_parse_cache(MODERN_CACHE), DynamicLinkerCache)
+        self.assertIsInstance(_parse_cache(HWCAPS_CACHE), DynamicLinkerCache)
