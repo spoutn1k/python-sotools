@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from sotools.dl_cache.flags import Flags
 from sotools.dl_cache.dl_cache import (_CacheHeader, _FileEntryNew)
@@ -98,8 +98,8 @@ def _cache_libraries(data: bytes) -> List[ResolvedEntry]:
 @dataclass(frozen=True)
 class DynamicLinkerCache:
     file: str
-    generator: Optional[str]
-    entries: list[ResolvedEntry]
+    generator: Optional[str] = None
+    entries: List[ResolvedEntry] = field(default_factory=list)
 
 
 @lru_cache()
