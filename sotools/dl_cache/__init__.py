@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Dict
 from dataclasses import dataclass
 from functools import lru_cache
 from sotools.dl_cache.flags import Flags
@@ -77,18 +77,26 @@ def _cache_libraries(data: bytes) -> List[ResolvedEntry]:
 
 @lru_cache()
 def cache_libraries(cache_file: str = "/etc/ld.so.cache",
-                    arch_flags: int = None):
+                    arch_flags: int = None) -> Dict[str, str]:
     """
-    Returns a dictionary with the contents of the given cache file
+    Returns a dictionary with a curated list of the given cache file contents
     (/etc/ld.so.cache by default)
 
     cache: path towards a linker cache file
-    flags: flag value to look for. A null value will return binaries matching the interpreter,
-        a non-null value will be used to filter out mismatching entries. See Flags.expected_flags
+    flags: flag value to look for. A null value will return binaries matching
+        the interpreter, a non-null value will be used to filter out mismatching
+        entries. See Flags.expected_flags to create flag values
 
     Can be used to assume what libraries are installed on the system and where
     The keys are libraries' sonames; the values are the paths at which the
     corresponding shared object can be found
+
+    The cache files may contain multiple entries for the same soname that differ
+    in their flags, OS ABI and hardware capabilities. The dict returned
+    contains one entry per soname, the most likely to be picked on the current
+    system.
+
+    See _cache_libraries for finer-grain control over the cache's contents
     """
 
     _arch_flags = arch_flags

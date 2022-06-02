@@ -4,9 +4,11 @@ Rules in ld.so(8)
 """
 
 import os
+from typing import Optional
 from functools import lru_cache
 from pathlib import Path
 from sotools.dl_cache import cache_libraries
+from sotools.dl_cache.flags import Flags
 
 
 class LinkingError(Exception):
@@ -25,10 +27,22 @@ def _linker_path():
     return (ld_library_path, default_path)
 
 
-def resolve(soname, rpath=None, runpath=None, arch_flags=None):
+def resolve(soname: str,
+            rpath: Optional[str] = None,
+            runpath: Optional[str] = None,
+            arch_flags: Optional[Flags] = None) -> Optional[str]:
     """
     Get a path towards a library from a given soname.
     Implements system rules and takes the environment into account
+
+    soname:     'key' to lookup for a library
+    rpath:      rpath to use for this lookup
+    runpath:    runpath to use for this lookup
+    arch_flags: flags to look for; useful for 32bit libraries on 64bit systems
+                See sotools.dl_cache.flags.Flags for info
+
+    The method will return a resolved path for the given soname or None if
+    no matching entry could be found.
     """
 
     found = None
