@@ -4,7 +4,7 @@ from shutil import which
 from sotools import is_elf, library_links
 from sotools.ldd import ldd
 from sotools.libraryset import LibrarySet, Library
-from sotools.linker import resolve, host_libraries
+from sotools.linker import resolve
 
 
 class ToolsTest(unittest.TestCase):

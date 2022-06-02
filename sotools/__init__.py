@@ -46,7 +46,7 @@ def library_links(shared_object: Library):
 
     libname = Path(shared_object.binary_path).name
 
-    # If no '.so' in the file name, bind anyway and exit
+    # If no '.so' in the file name, return
     if not match(r'.*\.so.*', libname):
         debug("library_links: Error in format of %s", libname)
         return {Path(shared_object.binary_path)}
@@ -68,7 +68,7 @@ def library_links(shared_object: Library):
         _glob_links(matches.group('prefix'))
 
     # If we encounter a special case of symlink presenting as another library,
-    # bind the symlink and the shared object being pointed to.
+    # return the symlink and the shared object being pointed to.
     if shared_object.soname != libname:
         cleared.add(Path(shared_object.binary_path))
         cleared.add(Path(library_file))

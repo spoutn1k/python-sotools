@@ -10,6 +10,7 @@ from pathlib import Path
 from sotools.util import flatten
 
 from sotools.linker import resolve, LinkingError
+from sotools.dl_cache import Flags
 
 from elftools.common.exceptions import ELFError
 from elftools.elf.elffile import ELFFile
@@ -319,8 +320,19 @@ class LibrarySet(set):
         be found by e4s-cl
         """
         superset = LibrarySet(self)
-        rpath = rpath or []
-        runpath = runpath or []
+        arch_flags = None
+
+        # Assert all libraries are from the same architecture and store the
+        # appropriate flag in arch_flag
+        # Calculate all flags and boil them down in a set, filtering out Nones
+        search_flags = {Flags.expected_flags(lib.binary_path) for lib in self}
+        valid_flags = set(filter(None, search_flags))
+        if len(valid_flags) == 1:
+            arch_flags = list(valid_flags)[0]
+        else:
+            logging.debug(
+                "Resolving dependencies of a set with mixed architectures (%s) !",
+                ",".join(valid_flags))
 
         missing = superset.missing_libraries
         change = True
@@ -328,8 +340,9 @@ class LibrarySet(set):
         while change:
             for soname in missing:
                 path = resolve(soname,
-                               rpath=superset.rpath + rpath,
-                               runpath=superset.runpath + runpath)
+                               rpath=superset.rpath,
+                               runpath=superset.runpath,
+                               arch_flags=arch_flags)
 
                 if not path:
                     continue
@@ -350,6 +363,6 @@ class LibrarySet(set):
             lib = self.find(soname)
             if lib and lib.binary_path:
                 return "\t%(soname)s => %(binary_path)s" % lib.__dict__
-            return f"{soname} => not found"
+            return f"\t{soname} => not found"
 
         return list(map(line, set.union(self.sonames, self.missing_libraries)))
