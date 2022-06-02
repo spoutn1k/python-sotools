@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 from dataclasses import dataclass
 from functools import lru_cache
 from sotools.dl_cache.flags import Flags
@@ -11,6 +11,26 @@ from sotools.dl_cache.extensions.hwcaps import (HWCAPSection,
 from sotools.dl_cache.extensions.generator import GeneratorSection
 from sotools.dl_cache.extensions import (cache_extension_sections,
                                          CacheExtensionTag)
+
+
+def get_generator(data: bytes) -> Optional[str]:
+    """
+    Return the generator string from cache data, if the cache is recent enough
+    to posess extensions
+    """
+    header = _CacheHeader.deserialize(data)
+    data = data[header.offset:]
+
+    if not header.extension_offset:
+        logging.debug("Failed to retrieve generator: no extensions in cache")
+        return None
+
+    extensions = cache_extension_sections(data[header.extension_offset:])
+
+    for section in extensions:
+        if section.tag == CacheExtensionTag.TAG_GENERATOR:
+            return GeneratorSection(section).string_value(data)
+    return None
 
 
 @dataclass(frozen=True)
@@ -75,7 +95,36 @@ def _cache_libraries(data: bytes) -> List[ResolvedEntry]:
     return list(map(_lookup, _entries(data)))
 
 
+@dataclass
+class DynamicLinkerCache:
+    file: str
+    generator: Optional[str]
+    entries: list[ResolvedEntry]
+
+
 @lru_cache()
+def _parse_cache(
+        cache_file: str = "/etc/ld.so.cache") -> Optional[DynamicLinkerCache]:
+    try:
+        with open(cache_file, 'rb') as cache_file:
+            cache_data = cache_file.read()
+    except OSError as err:
+        logging.error("Failed to open rtld cache: %s".str(err))
+        return None
+
+    try:
+        entries = _cache_libraries(cache_data)
+    except Exception as err:
+        logging.error("rtdl cache parsing failed: %s", str(err))
+        return None
+
+    generator = get_generator(cache_data)
+
+    fields = dict(file=cache_file, entries=entries, generator=generator)
+
+    return DynamicLinkerCache(**fields)
+
+
 def cache_libraries(cache_file: str = "/etc/ld.so.cache",
                     arch_flags: int = None) -> Dict[str, str]:
     """
@@ -103,15 +152,9 @@ def cache_libraries(cache_file: str = "/etc/ld.so.cache",
     if _arch_flags is None:
         _arch_flags = Flags.expected_flags()
 
-    with open(cache_file, 'rb') as cache_file:
-        cache = cache_file.read()
+    cache = _parse_cache(cache_file)
 
-    try:
-        libs = _cache_libraries(cache)
-    except Exception as err:
-        logging.debug("DLCache parsing failed: %s", str(err))
-        libs = []
-
+    libs = cache.entries
     libs.reverse()
 
     def _generate_values():
@@ -124,19 +167,3 @@ def cache_libraries(cache_file: str = "/etc/ld.so.cache",
 
 def host_libraries(cache_file="/etc/ld.so.cache"):
     return cache_libraries(cache_file)
-
-
-def get_generator(data):
-    header = _CacheHeader.deserialize(data)
-    data = data[header.offset:]
-
-    if not header.extension_offset:
-        logging.info("Failed to retrieve generator: no extensions in cache")
-        return ""
-
-    extensions = cache_extension_sections(data[header.extension_offset:])
-
-    for section in extensions:
-        if section.tag == CacheExtensionTag.TAG_GENERATOR:
-            return GeneratorSection(section).string_value(data)
-    return ""
