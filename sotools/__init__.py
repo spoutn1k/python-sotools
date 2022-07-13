@@ -9,8 +9,6 @@ from logging import debug
 
 from sotools.libraryset import Library
 
-from elftools.elf.elffile import ELFFile
-
 
 def is_elf(path):
     """
@@ -18,12 +16,13 @@ def is_elf(path):
     It's dirty, but that is the best I could find in the elftools module
     """
     try:
-        with open(path, 'rb') as target:
-            ELFFile(target)
+        with open(path, 'rb') as file:
+            magic = file.read(4)
+
     except Exception:
         return False
 
-    return True
+    return magic == "\x7fELF".encode()
 
 
 def library_links(shared_object: Library):
