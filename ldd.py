@@ -2,10 +2,9 @@
 
 import os
 import sys
+import logging
 
 from sotools.ldd import ldd, NotELFError
-
-os.environ["PRINT_TRIES"] = "False"
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -13,8 +12,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if "--print-tries" in sys.argv:
-        os.environ["PRINT_TRIES"] = "True"
-
+        logging.basicConfig(filename='lib_discovery.log', level=logging.DEBUG)
+        
     try:
         libs = ldd(sys.argv[1])
     except NotELFError:

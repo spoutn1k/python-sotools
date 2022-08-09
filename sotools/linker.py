@@ -9,8 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from sotools.dl_cache import cache_libraries
 from sotools.dl_cache.flags import Flags
-
-os.environ["PRINT_TRIES"] = "False"
+import logging
 
 
 class LinkingError(Exception):
@@ -47,8 +46,7 @@ def resolve(soname: str,
     no matching entry could be found.
     """
     try_logs = False
-    if os.environ["PRINT_TRIES"] == "True":
-        try_logs = True
+    try_logs = True
 
     found = None
     rpath = rpath or []
@@ -56,9 +54,9 @@ def resolve(soname: str,
     cache_entries = cache_libraries(arch_flags=arch_flags)
 
     if try_logs:
-        print(f"searching for {soname}")
-        print(f"rpath={rpath}")
-        print(f"runpath={runpath}")
+        logging.debug(f"searching for {soname}")
+        logging.debug(f"rpath={rpath}")
+        logging.debug(f"runpath={runpath}")
 
     def _valid(path):
         return os.path.exists(path) and os.path.isdir(path)
@@ -69,7 +67,7 @@ def resolve(soname: str,
     for dir_ in filter(_valid, dynamic_paths):
         potential_lib = Path(dir_, soname).as_posix()
         if try_logs:
-            print(f"trying file={potential_lib}")
+            logging.debug(f"trying file={potential_lib}")
         if os.path.exists(potential_lib):
             found = potential_lib
 
@@ -83,8 +81,7 @@ def resolve(soname: str,
                 found = potential_lib
 
     if try_logs and found:
-        print(f"{soname} was found at {found}")
-    if try_logs:
-        print("\n")
+        logging.debug(f"{soname} was found at {found}")
+        logging.debug(f"value returned: {os.path.realpath(found)}\n")
 
     return os.path.realpath(found) if found else None
