@@ -12,6 +12,7 @@ from sotools.dl_cache.flags import Flags
 
 os.environ["PRINT_TRIES"] = "False"
 
+
 class LinkingError(Exception):
     pass
 
@@ -67,7 +68,8 @@ def resolve(soname: str,
 
     for dir_ in filter(_valid, dynamic_paths):
         potential_lib = Path(dir_, soname).as_posix()
-        if try_logs : print(f"trying file={potential_lib}")
+        if try_logs:
+            print(f"trying file={potential_lib}")
         if os.path.exists(potential_lib):
             found = potential_lib
 
@@ -80,7 +82,9 @@ def resolve(soname: str,
             if os.path.exists(potential_lib):
                 found = potential_lib
 
-    if try_logs and found: print(f"{soname} was found at {found}")
-    if try_logs: print(f"\n")
+    if try_logs and found:
+        print(f"{soname} was found at {found}")
+    if try_logs:
+        print("\n")
 
     return os.path.realpath(found) if found else None
