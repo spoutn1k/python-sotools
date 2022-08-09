@@ -12,7 +12,7 @@ if __name__ == '__main__':
         print("Usage: %s <ELF file>" % sys.argv[0], file=sys.stderr)
         sys.exit(1)
 
-    if "--print_tries" in sys.argv:
+    if "--print-tries" in sys.argv:
         os.environ["PRINT_TRIES"] = "True"
 
     try:
