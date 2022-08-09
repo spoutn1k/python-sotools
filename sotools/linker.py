@@ -10,6 +10,7 @@ from pathlib import Path
 from sotools.dl_cache import cache_libraries
 from sotools.dl_cache.flags import Flags
 
+os.environ["PRINT_TRIES"] = "False"
 
 class LinkingError(Exception):
     pass
@@ -44,16 +45,16 @@ def resolve(soname: str,
     The method will return a resolved path for the given soname or None if
     no matching entry could be found.
     """
-    verbose = False
+    try_logs = False
     if os.environ["PRINT_TRIES"] == "True":
-        verbose = True
+        try_logs = True
 
     found = None
     rpath = rpath or []
     runpath = runpath or []
     cache_entries = cache_libraries(arch_flags=arch_flags)
 
-    if verbose:
+    if try_logs:
         print(f"searching for {soname}")
         print(f"rpath={rpath}")
         print(f"runpath={runpath}")
@@ -66,7 +67,7 @@ def resolve(soname: str,
 
     for dir_ in filter(_valid, dynamic_paths):
         potential_lib = Path(dir_, soname).as_posix()
-        if verbose : print(f"trying file={potential_lib}")
+        if try_logs : print(f"trying file={potential_lib}")
         if os.path.exists(potential_lib):
             found = potential_lib
 
@@ -79,7 +80,7 @@ def resolve(soname: str,
             if os.path.exists(potential_lib):
                 found = potential_lib
 
-    if verbose and found: print(f"{soname} was found at {found}")
-    if verbose: print(f"\n")
+    if try_logs and found: print(f"{soname} was found at {found}")
+    if try_logs: print(f"\n")
 
     return os.path.realpath(found) if found else None
