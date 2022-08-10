@@ -4,7 +4,7 @@ Rules in ld.so(8)
 """
 
 import os
-from typing import Optional
+from typing import Optional, List
 from functools import lru_cache
 from pathlib import Path
 from sotools.dl_cache import cache_libraries
@@ -45,43 +45,58 @@ def resolve(soname: str,
     The method will return a resolved path for the given soname or None if
     no matching entry could be found.
     """
-    try_logs = False
-    try_logs = True
 
-    found = None
-    rpath = rpath or []
-    runpath = runpath or []
+    found = Path()
+
+    def _found() -> bool:
+        """Check if a returned path corresponds to the soname"""
+        return found != Path()
+
+    def _valid(path: Path) -> bool:
+        """Check a path is an existing directory"""
+        return path.is_dir()
+
+    def _search_paths(soname: str, paths: List[Path], reason: str) -> Path:
+        """Search a list of paths and return the first match"""
+        if paths:
+            path_list_str = os.pathsep.join(map(lambda x: x.as_posix(), paths))
+            logging.debug(f"search path={path_list_str}\t\t({reason or ''})")
+
+        for dir_ in filter(_valid, paths):
+            potential_lib = Path(dir_, soname)
+            logging.debug(f"trying file={potential_lib.as_posix()}")
+            if potential_lib.exists():
+                return potential_lib
+
+        return Path()
+
+    rpath = map(Path, list(rpath or []))
+    ld_library_path = map(Path, _linker_path()[0])
+    runpath = map(Path, list(runpath or []))
     cache_entries = cache_libraries(arch_flags=arch_flags)
+    system_path = map(Path, _linker_path()[1])
 
-    if try_logs:
-        logging.debug(f"searching for {soname}")
-        logging.debug(f"rpath={rpath}")
-        logging.debug(f"runpath={runpath}")
+    logging.debug(f"find library={soname}; searching")
 
-    def _valid(path):
-        return os.path.exists(path) and os.path.isdir(path)
+    dynamic_paths = [
+        (rpath, 'RPATH'),
+        (ld_library_path, 'LD_LIBRARY_PATH'),
+        (runpath, 'RUNPATH'),
+    ]
 
-    dynamic_paths = list(rpath) + _linker_path()[0] + list(runpath)
-    default_paths = _linker_path()[1]
+    default_paths = [(system_path, 'SYSTEM')]
 
-    for dir_ in filter(_valid, dynamic_paths):
-        potential_lib = Path(dir_, soname).as_posix()
-        if try_logs:
-            logging.debug(f"trying file={potential_lib}")
-        if os.path.exists(potential_lib):
-            found = potential_lib
+    for tuple_ in dynamic_paths:
+        if not _found():
+            found = _search_paths(soname, *tuple_)
 
-    if not found and soname in cache_entries:
-        found = cache_entries[soname]
+    if not _found():
+        logging.debug("search cache=/etc/ld.so.cache")
+        if soname in cache_entries:
+            found = Path(cache_entries[soname])
 
-    if not found:
-        for dir_ in filter(_valid, default_paths):
-            potential_lib = Path(dir_, soname).as_posix()
-            if os.path.exists(potential_lib):
-                found = potential_lib
+    for tuple_ in default_paths:
+        if not _found():
+            found = _search_paths(soname, *tuple_)
 
-    if try_logs and found:
-        logging.debug(f"{soname} was found at {found}")
-        logging.debug(f"value returned: {os.path.realpath(found)}")
-
-    return os.path.realpath(found) if found else None
+    return found.resolve() if _found() else None
