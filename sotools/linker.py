@@ -70,11 +70,11 @@ def resolve(soname: str,
 
         return Path()
 
-    rpath = map(Path, list(rpath or []))
-    ld_library_path = map(Path, _linker_path()[0])
-    runpath = map(Path, list(runpath or []))
+    rpath = list(map(Path, list(rpath or [])))
+    ld_library_path = list(map(Path, _linker_path()[0]))
+    runpath = list(map(Path, list(runpath or [])))
     cache_entries = cache_libraries(arch_flags=arch_flags)
-    system_path = map(Path, _linker_path()[1])
+    system_path = list(map(Path, _linker_path()[1]))
 
     logging.debug(f"find library={soname}; searching")
 
