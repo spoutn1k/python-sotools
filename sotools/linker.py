@@ -82,6 +82,6 @@ def resolve(soname: str,
 
     if try_logs and found:
         logging.debug(f"{soname} was found at {found}")
-        logging.debug(f"value returned: {os.path.realpath(found)}\n")
+        logging.debug(f"value returned: {os.path.realpath(found)}")
 
     return os.path.realpath(found) if found else None

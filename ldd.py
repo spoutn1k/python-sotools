@@ -12,7 +12,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if "--print-tries" in sys.argv:
-        logging.basicConfig(filename='lib_discovery.log', level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG)
         
     try:
         libs = ldd(sys.argv[1])
