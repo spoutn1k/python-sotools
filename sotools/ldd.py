@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 from sotools import is_elf
 from sotools.libraryset import Library, LibrarySet
@@ -17,6 +18,7 @@ def ldd(binary: str):
     if not is_elf(path):
         raise NotELFError
 
-    libs = LibrarySet([Library.from_path(path)])
+    executable = LibrarySet([Library.from_path(path)])
+    libraries = deepcopy(executable)
 
-    return libs.resolve()
+    return LibrarySet(libraries.resolve() - executable)

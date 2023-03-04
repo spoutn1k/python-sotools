@@ -44,6 +44,9 @@ class Library:
                 logging.error("Error parsing '%s' for ELF data: %s",
                               getattr(file, 'name', file), err)
 
+        if not library.soname:
+            library.soname = path.name
+
         return library
 
     def __init__(self):
@@ -343,6 +346,7 @@ class LibrarySet(set):
                                rpath=superset.rpath,
                                runpath=superset.runpath,
                                arch_flags=arch_flags)
+                logging.debug(f"Got path: {path}")
 
                 if not path:
                     continue
@@ -365,4 +369,7 @@ class LibrarySet(set):
                 return "\t%(soname)s => %(binary_path)s" % lib.__dict__
             return f"\t{soname} => not found"
 
-        return list(map(line, set.union(self.sonames, self.missing_libraries)))
+        lines = list(map(line, set.union(self.sonames,
+                                         self.missing_libraries)))
+        lines.sort()
+        return lines
