@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sotools"
+authors = [
+    {name = "Jean-Baptiste Skutnik", email = "jb.skutnik@gmail.com"},
+]
+description = "Collection of dynamic linking tools"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["elf", "linking", "linux", "libraries", "system"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    'Intended Audience :: Developers',
+    'Environment :: Console',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python',
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "pyelftools",
+]
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+write_to = "sotools/version.py"
