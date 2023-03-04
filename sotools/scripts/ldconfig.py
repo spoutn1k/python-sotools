@@ -1,27 +1,53 @@
 #!/bin/env python3
 
-import os
 import sys
-
+import logging
+from argparse import ArgumentParser
 from sotools.dl_cache import _cache_libraries, Flags, get_generator
 
 DEFAULT_CACHE = "/etc/ld.so.cache"
+DESCRIPTION = """List the contents of a given dynamic linker cache."""
+EPILOG = """Please report any mismatch between the dynamic linker config tool and the output of this program to http://github.com/spoutn1k/python-sotools."""
 
-if __name__ == '__main__':
-    target_cache = DEFAULT_CACHE
+PARSER = ArgumentParser(
+    prog='ldconfig.py',
+    description=DESCRIPTION,
+    epilog=EPILOG,
+)
 
-    if len(sys.argv) >= 2:
-        target_cache = sys.argv[1]
+PARSER.add_argument(
+    "cache",
+    help="Path to an dynamic linker cache to dump.",
+    nargs='?',
+    default=DEFAULT_CACHE,
+)
+
+PARSER.add_argument(
+    "-v",
+    "--verbose",
+    action="store_true",
+    help="Toggle verbose output",
+)
+
+
+def main():
+    args = PARSER.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(message)s",
+        )
 
     try:
-        with open(target_cache, 'rb') as cache_file:
+        with open(args.cache, 'rb') as cache_file:
             cache_data = cache_file.read()
     except Exception as err:
         print(err, file=sys.stderr)
         sys.exit(1)
 
     libs = _cache_libraries(cache_data)
-    print(f"{len(libs)} libs found in cache `{target_cache}'")
+    print(f"{len(libs)} libs found in cache `{args.cache}'")
 
     for library in libs:
         hwcap_entry_string = f" hwcap: \"{library.hwcaps}\"" if library.hwcaps else ""
