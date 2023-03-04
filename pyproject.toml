@@ -24,5 +24,9 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.scripts]
+sowhich = "sotools.scripts.sowhich:main"
+"ldd.py" = "sotools.scripts.ldd:main"
+
 [tool.setuptools_scm]
 write_to = "sotools/version.py"

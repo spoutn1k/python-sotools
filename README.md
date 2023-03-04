@@ -22,6 +22,6 @@ The following scripts are installed automatically when installing `python-sotool
 
 Simple re-implementation of ldd with the contents of `python-sotools`. This version does not use the actual linker and can be trusted not to run any code when executed with unknown executables, unlike the original.
 
-### `sowhich.py`
+### `sowhich`
 
 Which library is resolved ? This command returns the path for the library name given as an argument. That's it.
