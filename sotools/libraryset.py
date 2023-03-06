@@ -6,6 +6,7 @@ to facilitate handling large amounts of libraries
 import re
 import logging
 from pathlib import Path
+from typing import Union
 
 from sotools.util import flatten
 
@@ -27,7 +28,7 @@ class Library:
     """
 
     @classmethod
-    def from_path(cls, path):
+    def from_path(cls, path: Union[str, Path]):
         library = cls()
 
         with open(path, 'rb') as file:
@@ -45,7 +46,7 @@ class Library:
                               getattr(file, 'name', file), err)
 
         if not library.soname:
-            library.soname = path.name
+            library.soname = Path(path).name
 
         return library
 
