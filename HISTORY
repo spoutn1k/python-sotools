@@ -1,3 +1,10 @@
+0.1.1 
+------------------
+
+- Revamped scripts
+- Remove erroneous search of the current directory when LD_LIBRARY_PATH is unset
+- Switch to pyproject.toml
+
 0.1.0 (02-06-2022)
 ------------------
 

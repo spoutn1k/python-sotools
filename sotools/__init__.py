@@ -5,15 +5,15 @@ Library analysis and manipulation helpers
 from re import match
 from os.path import realpath
 from pathlib import Path
+from typing import Set
 from logging import debug
 
 from sotools.libraryset import Library
 
 
-def is_elf(path):
+def is_elf(path: Path) -> bool:
     """
-    -> bool
-    It's dirty, but that is the best I could find in the elftools module
+    Returns a boolean if the file associated to the given path contains an ELF object.
     """
     try:
         with open(path, 'rb') as file:
@@ -25,11 +25,10 @@ def is_elf(path):
     return magic == "\x7fELF".encode()
 
 
-def library_links(shared_object: Library):
+def library_links(shared_object: Library) -> Set[Path]:
     """
-    -> set(pathlib.Path)
     This method resolves symbolic links that may exist and point to the
-    library passed as an argument.
+    library passed as an argument in the same directory as that library.
 
     Given the directory:
     lrwxrwxrwx. 1 root root   16 May 13  2019 libmpi.so -> libmpi.so.12.1.1

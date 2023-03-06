@@ -37,8 +37,8 @@ def _linker_path() -> Tuple[List[str], List[str]]:
 
 
 def resolve(soname: str,
-            rpath: Optional[str] = None,
-            runpath: Optional[str] = None,
+            rpath: Optional[List[str]] = None,
+            runpath: Optional[List[str]] = None,
             arch_flags: Optional[Flags] = None) -> Optional[str]:
     """
     Get a path towards a library from a given soname.
