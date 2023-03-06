@@ -81,6 +81,7 @@ def resolve(soname: str,
     rpath = list(map(Path, list(rpath or [])))
     runpath = list(map(Path, list(runpath or [])))
     cache_entries = cache_libraries(arch_flags=arch_flags)
+    system_path = map(Path, _linker_path()[1])
 
     env_path, system_path = _linker_path()
     env_path = list(map(Path, env_path))
