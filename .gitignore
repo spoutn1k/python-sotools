@@ -1,6 +1,6 @@
 .tox
 __pycache__
-sotools.egg-info
+python_sotools.egg-info
 .coverage
 sotools/version.py
 build/

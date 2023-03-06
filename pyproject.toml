@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sotools"
+name = "python-sotools"
 authors = [
     {name = "Jean-Baptiste Skutnik", email = "jb.skutnik@gmail.com"},
 ]
@@ -23,6 +23,9 @@ dependencies = [
     "pyelftools",
 ]
 dynamic = ["version"]
+
+[tool.setuptools]
+packages = ["sotools"]
 
 [project.scripts]
 sowhich = "sotools.scripts.sowhich:main"
