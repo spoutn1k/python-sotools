@@ -41,8 +41,18 @@ def _valid(path: Path) -> bool:
     return path.is_dir()
 
 
-def _search_paths(soname: str, paths: List[Path], reason: str) -> Path:
-    """Search a list of paths and return the first match"""
+def _search_paths(
+    soname: str,
+    paths: List[Path],
+    reason: str = "",
+) -> Optional[Path]:
+    """
+    Search a list of paths for a given soname and return the first match
+
+    soname:     The library name to search
+    paths:      The list of paths to look into
+    reason:     To mimic LD_DEBUG, optional reason of the search
+    """
     if paths:
         path_list_str = os.pathsep.join(map(lambda x: x.as_posix(), paths))
         logging.debug(f"search path={path_list_str}\t\t({reason or ''})")
@@ -53,7 +63,7 @@ def _search_paths(soname: str, paths: List[Path], reason: str) -> Path:
         if potential_lib.exists():
             return potential_lib
 
-    return Path()
+    return None
 
 
 def resolve(
@@ -78,11 +88,11 @@ def resolve(
     no matching entry could be found.
     """
 
-    found = Path()
+    found = None
 
     def _found() -> bool:
         """Check if a returned path corresponds to the soname"""
-        return found != Path()
+        return found not in {None, Path()}
 
     rpath = list(map(Path, list(rpath or [])))
     runpath = list(map(Path, list(runpath or [])))

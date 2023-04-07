@@ -1,18 +1,37 @@
 import unittest
 from pathlib import Path
-from sotools.dl_cache.structure import (BinaryStruct,
-                                        deserialize_null_terminated_string)
-from sotools.dl_cache.extensions import (CacheExtension, CacheExtensionSection,
-                                         CacheExtensionTag,
-                                         cache_extension_sections)
-from sotools.dl_cache.dl_cache import (_cache_type, _CacheType, _CacheHeader,
-                                       _CacheHeaderNew, _CacheHeaderOld,
-                                       _FileEntryNew, _FileEntryOld)
-from sotools.dl_cache.extensions.hwcaps import (dl_cache_hwcap_extension,
-                                                HWCAPSection)
+from sotools.dl_cache.structure import (
+    BinaryStruct,
+    deserialize_null_terminated_string,
+)
+from sotools.dl_cache.extensions import (
+    CacheExtension,
+    CacheExtensionSection,
+    CacheExtensionTag,
+    cache_extension_sections,
+)
+from sotools.dl_cache.dl_cache import (
+    _CacheHeader,
+    _CacheHeaderNew,
+    _CacheHeaderOld,
+    _CacheType,
+    _FileEntryNew,
+    _FileEntryOld,
+    _cache_type,
+)
+from sotools.dl_cache.extensions.hwcaps import (
+    HWCAPSection,
+    dl_cache_hwcap_extension,
+)
 from sotools.dl_cache.flags import Flags
-from sotools.dl_cache import (cache_libraries, _cache_libraries, get_generator,
-                              search_cache, _parse_cache, DynamicLinkerCache)
+from sotools.dl_cache import (
+    DynamicLinkerCache,
+    _cache_libraries,
+    _parse_cache,
+    cache_libraries,
+    get_generator,
+    search_cache,
+)
 
 EMBEDDED_CACHE = f'{Path(__file__).parent}/assets/embedded.so.cache'
 MODERN_CACHE = f'{Path(__file__).parent}/assets/modern.so.cache'
