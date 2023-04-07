@@ -1,4 +1,10 @@
-0.1.1 
+0.1.2 (07-04-2023)
+------------------
+
+- Added conditional flag on linker.resolve to choose for paths to be resolved
+
+
+0.1.1 (06-03-2023)
 ------------------
 
 - Revamped scripts
