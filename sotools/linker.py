@@ -36,10 +36,33 @@ def _linker_path() -> Tuple[List[str], List[str]]:
     return (ld_library_path, DEFAULT_PATHS)
 
 
-def resolve(soname: str,
-            rpath: Optional[List[str]] = None,
-            runpath: Optional[List[str]] = None,
-            arch_flags: Optional[Flags] = None) -> Optional[str]:
+def _valid(path: Path) -> bool:
+    """Check a path is an existing directory"""
+    return path.is_dir()
+
+
+def _search_paths(soname: str, paths: List[Path], reason: str) -> Path:
+    """Search a list of paths and return the first match"""
+    if paths:
+        path_list_str = os.pathsep.join(map(lambda x: x.as_posix(), paths))
+        logging.debug(f"search path={path_list_str}\t\t({reason or ''})")
+
+    for dir_ in filter(_valid, paths):
+        potential_lib = Path(dir_, soname)
+        logging.debug(f"trying file={potential_lib.as_posix()}")
+        if potential_lib.exists():
+            return potential_lib
+
+    return Path()
+
+
+def resolve(
+    soname: str,
+    rpath: Optional[List[str]] = None,
+    runpath: Optional[List[str]] = None,
+    arch_flags: Optional[Flags] = None,
+    absolute: bool = False,
+) -> Optional[Path]:
     """
     Get a path towards a library from a given soname.
     Implements system rules and takes the environment into account
@@ -49,6 +72,7 @@ def resolve(soname: str,
     runpath:    runpath to use for this lookup
     arch_flags: flags to look for; useful for 32bit libraries on 64bit systems
                 See sotools.dl_cache.flags.Flags for info
+    absolute:   output an absolute path to the final object if a link is found
 
     The method will return a resolved path for the given soname or None if
     no matching entry could be found.
@@ -59,24 +83,6 @@ def resolve(soname: str,
     def _found() -> bool:
         """Check if a returned path corresponds to the soname"""
         return found != Path()
-
-    def _valid(path: Path) -> bool:
-        """Check a path is an existing directory"""
-        return path.is_dir()
-
-    def _search_paths(soname: str, paths: List[Path], reason: str) -> Path:
-        """Search a list of paths and return the first match"""
-        if paths:
-            path_list_str = os.pathsep.join(map(lambda x: x.as_posix(), paths))
-            logging.debug(f"search path={path_list_str}\t\t({reason or ''})")
-
-        for dir_ in filter(_valid, paths):
-            potential_lib = Path(dir_, soname)
-            logging.debug(f"trying file={potential_lib.as_posix()}")
-            if potential_lib.exists():
-                return potential_lib
-
-        return Path()
 
     rpath = list(map(Path, list(rpath or [])))
     runpath = list(map(Path, list(runpath or [])))
@@ -115,6 +121,9 @@ def resolve(soname: str,
 
     if _found():
         logging.debug(f"found matching library={found}")
-        return found.resolve()
+        if absolute:
+            found = found.resolve()
+            logging.debug(f"-> link to library={found}")
+        return found
 
     return None
