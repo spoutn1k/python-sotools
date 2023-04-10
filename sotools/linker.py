@@ -28,10 +28,11 @@ def _linker_path() -> Tuple[List[str], List[str]]:
     Return linker search paths, in order
     Sourced from `man ld.so`
     """
-    ld_library_path = filter(
-        None,
-        os.environ.get('LD_LIBRARY_PATH', "").split(':'),
-    )
+    ld_library_path = list(
+        filter(
+            None,
+            os.environ.get('LD_LIBRARY_PATH', "").split(':'),
+        ))
 
     return (ld_library_path, DEFAULT_PATHS)
 
